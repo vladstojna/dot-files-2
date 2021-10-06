@@ -1,0 +1,14 @@
+---
+- hosts: manager
+  remote_user: vagrant
+  tasks:
+    - shell: uname -a
+      register: uname_result
+    - debug: msg="{{ uname_result.stdout }}"
+    - name: copy temporary inventory
+      copy:
+        src: /tmp/vagrant-ansible/inventory/vagrant_ansible_local_inventory
+        dest: /home/vagrant/provisioning/inventory.ini
+        owner: vagrant
+        group: vagrant
+        mode: '0644'
