@@ -23,3 +23,7 @@ client:
   cpus: 1
   memory: 512
   count: 1
+
+# Generated key pair location
+# The public key appends .pub to this value
+key: ~/.ssh/id_rsa
