@@ -32,5 +32,11 @@ def process_config(cfg)
         hostname: "#{cfg["client"]["hostname"]}#{i}",
         address: "#{IPV4_PREFIX}.#{100 + i}"))
   end
+
+  hash[:key] = {
+    :dir => File.dirname(cfg["key"].gsub("\\", "/")),
+    :name => File.basename(cfg["key"].gsub("\\", "/"))
+  }
+
   return hash
 end

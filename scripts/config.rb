@@ -19,5 +19,6 @@ def read_config(path)
   ["manager", "replica", "client"].each do |key|
     raise "Invalid block #{path}:#{key}" unless assert_config_block.call(cfg[key])
   end
+  raise "Key #{path}:key cannot be empty" unless cfg["key"]
   return cfg
 end
