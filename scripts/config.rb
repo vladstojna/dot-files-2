@@ -15,7 +15,7 @@ def read_config(path)
     end
   }
 
-  cfg = YAML.load(File.read(path))
+  cfg = YAML.safe_load(File.read(path))
   ["manager", "replica", "client"].each do |key|
     raise "Invalid block #{path}:#{key}" unless assert_config_block.call(cfg[key])
   end
