@@ -50,6 +50,13 @@ Vagrant.configure("2") do |config|
         vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
       end # vb
       config.vm.provision "shell", path: "bootstrap_docker.sh"
+      config.vm.provision "file",
+        source: "#{params[:key][:dir]}/#{params[:key][:name]}.pub",
+        destination: "#{params[:key][:name]}.pub"
+      config.vm.provision "shell",
+        privileged: false,
+        path: "authorize_key.sh",
+        env: {"VAGRANT_PUBKEY" => "$HOME/#{params[:key][:name]}.pub"}
     end # config
   end # loop
 
@@ -67,6 +74,13 @@ Vagrant.configure("2") do |config|
         vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
       end # vb
       config.vm.provision "shell", path: "bootstrap_docker.sh"
+      config.vm.provision "file",
+        source: "#{params[:key][:dir]}/#{params[:key][:name]}.pub",
+        destination: "#{params[:key][:name]}.pub"
+      config.vm.provision "shell",
+        privileged: false,
+        path: "authorize_key.sh",
+        env: {"VAGRANT_PUBKEY" => "$HOME/#{params[:key][:name]}.pub"}
     end # config
   end # loop
 
@@ -92,6 +106,17 @@ Vagrant.configure("2") do |config|
     config.vm.provision "shell",
       path: "bootstrap_manager.sh",
       env: {"VAGRANT_NODE_LIST" => hosts_string(params)}
+
+    config.vm.provision "file",
+      source: "#{params[:key][:dir]}/#{params[:key][:name]}",
+      destination: ".ssh/#{params[:key][:name]}"
+    config.vm.provision "file",
+      source: "#{params[:key][:dir]}/#{params[:key][:name]}.pub",
+      destination: ".ssh/#{params[:key][:name]}.pub"
+    config.vm.provision "shell",
+      inline: "chmod 644 .ssh/#{params[:key][:name]}.pub"
+    config.vm.provision "shell",
+      inline: "chmod 600 .ssh/#{params[:key][:name]}"
 
     # ansible test and inventory generation
     config.vm.provision "ansible_local", install: false do |ansible|
