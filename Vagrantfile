@@ -4,8 +4,7 @@
 require_relative "scripts/config"
 require_relative "scripts/process"
 
-cfg = read_config("config.yaml")
-params = process_config(cfg)
+params = process_config(read_config("config.yaml"))
 
 # transforms the parameter hash into a multiline string
 # which will be written into the VMs /etc/hosts file
@@ -76,6 +75,12 @@ Vagrant.configure("2") do |config|
       vb.cpus = block[:cpus]
       vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
     end # vb
+
+    config.vm.synced_folder "provisioning", "/home/vagrant/provisioning",
+      owner: "vagrant",
+      group: "vagrant",
+      mount_options: ["dmode=775", "fmode=664"]
+
     config.vm.provision "shell",
       path: "bootstrap_manager.sh",
       env: {"VAGRANT_NODE_LIST" => hosts_string(params)}
