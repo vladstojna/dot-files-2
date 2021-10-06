@@ -19,6 +19,14 @@ def hosts_string(params)
   return outer.join("\\n")
 end
 
+def host_nodes(params, key)
+  return [params[key][0][:hostname]]
+end
+
+def worker_nodes(params, key)
+  return params[key][1..-1].map { |x| x[:hostname] }
+end
+
 Vagrant.configure("2") do |config|
 
   box = "ubuntu/focal64"
@@ -84,6 +92,22 @@ Vagrant.configure("2") do |config|
     config.vm.provision "shell",
       path: "bootstrap_manager.sh",
       env: {"VAGRANT_NODE_LIST" => hosts_string(params)}
+
+    # ansible test and inventory generation
+    config.vm.provision "ansible_local", install: false do |ansible|
+      ansible.groups = {
+        # the first replica and client nodes are the swarm managers/hosts
+        # the rest are worker nodes
+        "server_hosts" => host_nodes(params, :replica),
+        "server_workers" => worker_nodes(params, :replica),
+        "client_hosts" => host_nodes(params, :client),
+        "client_workers" => worker_nodes(params, :client),
+        "hosts:children" => ["server_hosts", "client_hosts"],
+        "workers:children" => ["server_workers", "client_workers"]
+      }
+      ansible.playbook = "provisioning/self.yaml"
+      ansible.verbose = true
+    end # ansible
   end # config
 
 end
