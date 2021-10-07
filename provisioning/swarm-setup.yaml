@@ -1,0 +1,3 @@
+---
+- import_playbook: swarm-setup.server.yaml
+- import_playbook: swarm-setup.client.yaml

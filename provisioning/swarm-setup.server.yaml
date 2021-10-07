@@ -1,0 +1,5 @@
+---
+- import_playbook: template/swarm-setup.template.yaml
+  vars:
+    pb_hosts: server_hosts
+    pb_workers: server_workers
