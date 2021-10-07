@@ -1,0 +1,23 @@
+---
+- name: Initialize a docker swarm
+  hosts: "{{ pb_hosts }}"
+  remote_user: vagrant
+
+  tasks:
+    - shell: >
+        docker swarm init --advertise-addr
+        {{ hostvars[inventory_hostname]['ansible_env'].SSH_CONNECTION.split(" ")[2] }}
+      register: "swarm_init_result"
+
+    - set_fact:
+        f_swarm_info_list: "{{ swarm_init_result.stdout | \
+          regex_search('docker swarm join --token (.+) ([0-9\\.]+):([0-9]+)', \
+          '\\1', '\\2', '\\3', multiline=True) }}"
+
+    - set_fact:
+        f_swarm_info:
+          token: "{{ f_swarm_info_list[0] }}"
+          addr: "{{ f_swarm_info_list[1] }}"
+          port: "{{ f_swarm_info_list[2] }}"
+
+    - debug: var=f_swarm_info
