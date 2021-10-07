@@ -1,0 +1,30 @@
+---
+- name: Leave a docker swarm (workers)
+  hosts: "{{ pb_workers }}"
+  remote_user: vagrant
+
+  tasks:
+    - shell: docker swarm leave || true
+      no_log: true
+      register: swarm_leave_result
+    - debug: >
+        msg={{
+          swarm_leave_result.stderr
+          if swarm_leave_result.stderr
+          else swarm_leave_result.stdout
+        }}
+
+- name: Leave a docker swarm (swarm manager)
+  hosts: "{{ pb_managers }}"
+  remote_user: vagrant
+
+  tasks:
+    - shell: docker swarm leave --force || true
+      no_log: true
+      register: swarm_leave_result
+    - debug: >
+        msg={{
+          swarm_leave_result.stderr
+          if swarm_leave_result.stderr
+          else swarm_leave_result.stdout
+        }}
