@@ -1,0 +1,5 @@
+---
+- import_playbook: template/swarm-leave.template.yaml
+  vars:
+    pb_workers: client_workers
+    pb_managers: client_hosts
