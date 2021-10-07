@@ -127,8 +127,11 @@ Vagrant.configure("2") do |config|
         "server_workers" => worker_nodes(params, :replica),
         "client_hosts" => host_nodes(params, :client),
         "client_workers" => worker_nodes(params, :client),
+        "servers:children" => ["server_hosts", "server_workers"],
+        "clients:children" => ["client_hosts", "client_workers"],
         "hosts:children" => ["server_hosts", "client_hosts"],
-        "workers:children" => ["server_workers", "client_workers"]
+        "workers:children" => ["server_workers", "client_workers"],
+        "managed:children" => ["hosts", "workers"]
       }
       ansible.playbook = "provisioning/self.yaml"
       ansible.verbose = true
