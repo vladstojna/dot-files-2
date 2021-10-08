@@ -4,12 +4,18 @@
   remote_user: vagrant
 
   tasks:
-    - shell: docker swarm leave || true
+    - shell: docker swarm leave
       no_log: true
       register: swarm_leave_result
+      failed_when:
+        - "swarm_leave_result.rc != 0"
+        - '"This node is not part of a swarm" not in swarm_leave_result.stderr'
+      changed_when:
+        - "swarm_leave_result.rc == 0"
+
     - debug: >
         msg={{
-          swarm_leave_result.stderr
+          swarm_leave_result.stderr.split(': ', 1)[1]
           if swarm_leave_result.stderr
           else swarm_leave_result.stdout
         }}
@@ -19,12 +25,18 @@
   remote_user: vagrant
 
   tasks:
-    - shell: docker swarm leave --force || true
+    - shell: docker swarm leave --force
       no_log: true
       register: swarm_leave_result
+      failed_when:
+        - "swarm_leave_result.rc != 0"
+        - '"This node is not part of a swarm" not in swarm_leave_result.stderr'
+      changed_when:
+        - "swarm_leave_result.rc == 0"
+
     - debug: >
         msg={{
-          swarm_leave_result.stderr
+          swarm_leave_result.stderr.split('Error response from daemon: ', 1)[1]
           if swarm_leave_result.stderr
           else swarm_leave_result.stdout
         }}
