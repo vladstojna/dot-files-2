@@ -1,0 +1,25 @@
+# Vagrant configuration variables
+
+version: 2
+
+# Vagrant manager node configuration
+manager:
+  hostname: manager
+  cpus: 1
+  memory: 512
+
+# Swarm replicated server nodes configuration
+# The first replica will be the swarm manager
+replica:
+  hostname: replica
+  cpus: 1
+  memory: 512
+  count: 1
+
+# Client nodes configuration
+# The first client node will be the swarm manager
+client:
+  hostname: client
+  cpus: 1
+  memory: 512
+  count: 1
