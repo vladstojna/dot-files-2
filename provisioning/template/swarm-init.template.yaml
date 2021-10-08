@@ -3,11 +3,21 @@
   hosts: "{{ pb_hosts }}"
   remote_user: vagrant
 
+  vars:
+    ip_addr: "{{ hostvars[inventory_hostname]['ansible_env'].SSH_CONNECTION.split(' ')[2] }}"
+
   tasks:
     - shell: >
-        docker swarm init --advertise-addr
-        {{ hostvars[inventory_hostname]['ansible_env'].SSH_CONNECTION.split(" ")[2] }}
+        docker swarm init --advertise-addr {{ ip_addr }}
+        ||
+        docker swarm join-token worker
       register: "swarm_init_result"
+      failed_when:
+        - "swarm_init_result.rc != 0"
+        - '"This node is already part of a swarm" not in swarm_init_result.stderr'
+      changed_when:
+        - "swarm_init_result.rc == 0"
+        - '"Swarm initialized" in swarm_init_result.stdout'
 
     - set_fact:
         f_swarm_info_list: "{{ swarm_init_result.stdout | \
