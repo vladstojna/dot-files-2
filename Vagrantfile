@@ -4,8 +4,7 @@
 require_relative "scripts/config"
 require_relative "scripts/process"
 
-cfg = read_config("config.yaml")
-params = process_config(cfg)
+params = process_config(read_config("config.yaml"))
 
 # transforms the parameter hash into a multiline string
 # which will be written into the VMs /etc/hosts file
@@ -18,6 +17,14 @@ def hosts_string(params)
     end
   end
   return outer.join("\\n")
+end
+
+def host_nodes(params, key)
+  return [params[key][0][:hostname]]
+end
+
+def worker_nodes(params, key)
+  return params[key][1..-1].map { |x| x[:hostname] }
 end
 
 Vagrant.configure("2") do |config|
@@ -43,6 +50,13 @@ Vagrant.configure("2") do |config|
         vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
       end # vb
       config.vm.provision "shell", path: "bootstrap_docker.sh"
+      config.vm.provision "file",
+        source: "#{params[:key][:dir]}/#{params[:key][:name]}.pub",
+        destination: "#{params[:key][:name]}.pub"
+      config.vm.provision "shell",
+        privileged: false,
+        path: "authorize_key.sh",
+        env: {"VAGRANT_PUBKEY" => "$HOME/#{params[:key][:name]}.pub"}
     end # config
   end # loop
 
@@ -60,6 +74,13 @@ Vagrant.configure("2") do |config|
         vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
       end # vb
       config.vm.provision "shell", path: "bootstrap_docker.sh"
+      config.vm.provision "file",
+        source: "#{params[:key][:dir]}/#{params[:key][:name]}.pub",
+        destination: "#{params[:key][:name]}.pub"
+      config.vm.provision "shell",
+        privileged: false,
+        path: "authorize_key.sh",
+        env: {"VAGRANT_PUBKEY" => "$HOME/#{params[:key][:name]}.pub"}
     end # config
   end # loop
 
@@ -76,9 +97,45 @@ Vagrant.configure("2") do |config|
       vb.cpus = block[:cpus]
       vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
     end # vb
+
+    config.vm.synced_folder "provisioning", "/home/vagrant/provisioning",
+      owner: "vagrant",
+      group: "vagrant",
+      mount_options: ["dmode=775", "fmode=664"]
+
     config.vm.provision "shell",
       path: "bootstrap_manager.sh",
       env: {"VAGRANT_NODE_LIST" => hosts_string(params)}
+
+    config.vm.provision "file",
+      source: "#{params[:key][:dir]}/#{params[:key][:name]}",
+      destination: ".ssh/#{params[:key][:name]}"
+    config.vm.provision "file",
+      source: "#{params[:key][:dir]}/#{params[:key][:name]}.pub",
+      destination: ".ssh/#{params[:key][:name]}.pub"
+    config.vm.provision "shell",
+      inline: "chmod 644 .ssh/#{params[:key][:name]}.pub"
+    config.vm.provision "shell",
+      inline: "chmod 600 .ssh/#{params[:key][:name]}"
+
+    # ansible test and inventory generation
+    config.vm.provision "ansible_local", install: false do |ansible|
+      ansible.groups = {
+        # the first replica and client nodes are the swarm managers/hosts
+        # the rest are worker nodes
+        "server_hosts" => host_nodes(params, :replica),
+        "server_workers" => worker_nodes(params, :replica),
+        "client_hosts" => host_nodes(params, :client),
+        "client_workers" => worker_nodes(params, :client),
+        "servers:children" => ["server_hosts", "server_workers"],
+        "clients:children" => ["client_hosts", "client_workers"],
+        "hosts:children" => ["server_hosts", "client_hosts"],
+        "workers:children" => ["server_workers", "client_workers"],
+        "managed:children" => ["hosts", "workers"]
+      }
+      ansible.playbook = "provisioning/self.yaml"
+      ansible.verbose = true
+    end # ansible
   end # config
 
 end
