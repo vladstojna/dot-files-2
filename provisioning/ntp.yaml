@@ -3,6 +3,8 @@
   become: yes
   become_method: sudo
   remote_user: vagrant
+  gather_facts: no
+
   tasks:
     - name: ensure ntp is at the latest version
       apt: pkg=ntp state=latest
