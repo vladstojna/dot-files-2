@@ -5,7 +5,8 @@
   gather_facts: no
 
   tasks:
-    - shell: docker swarm leave
+    - name: Leave swarm command
+      shell: docker swarm leave
       no_log: true
       register: swarm_leave_result
       failed_when:
@@ -27,7 +28,8 @@
   gather_facts: no
 
   tasks:
-    - shell: docker swarm leave --force
+    - name: Leave swarm command (force)
+      shell: docker swarm leave --force
       no_log: true
       register: swarm_leave_result
       failed_when:

@@ -14,7 +14,8 @@
     - set_fact:
         ip_addr: "{{ ip_addr.stdout }}"
 
-    - shell: >
+    - name: Initialize or get join token command
+      shell: >
         docker swarm init --advertise-addr {{ ip_addr }}
         ||
         docker swarm join-token worker
