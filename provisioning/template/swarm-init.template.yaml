@@ -2,11 +2,18 @@
 - name: Initialize a docker swarm
   hosts: "{{ pb_hosts }}"
   remote_user: vagrant
-
-  vars:
-    ip_addr: "{{ hostvars[inventory_hostname]['ansible_env'].SSH_CONNECTION.split(' ')[2] }}"
+  gather_facts: no
 
   tasks:
+    - name: get IP address of host
+      shell: getent hosts {{ inventory_hostname }} | awk '{print $1}'
+      register: ip_addr
+      delegate_to: manager
+      changed_when: false
+
+    - set_fact:
+        ip_addr: "{{ ip_addr.stdout }}"
+
     - shell: >
         docker swarm init --advertise-addr {{ ip_addr }}
         ||

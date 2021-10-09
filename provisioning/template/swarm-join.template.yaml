@@ -2,6 +2,7 @@
 - name: Join a docker swarm
   hosts: "{{ pb_workers }}"
   remote_user: vagrant
+  gather_facts: no
 
   vars:
     swarm_info: "{{ pb_swarm_info }}"

@@ -2,6 +2,7 @@
 - name: Leave a docker swarm (workers)
   hosts: "{{ pb_workers }}"
   remote_user: vagrant
+  gather_facts: no
 
   tasks:
     - shell: docker swarm leave
