@@ -24,6 +24,7 @@
 - name: Leave a docker swarm (swarm manager)
   hosts: "{{ pb_managers }}"
   remote_user: vagrant
+  gather_facts: no
 
   tasks:
     - shell: docker swarm leave --force
