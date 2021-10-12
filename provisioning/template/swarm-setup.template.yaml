@@ -1,0 +1,9 @@
+---
+- import_playbook: swarm-init.template.yaml
+  vars:
+    pb_hosts: "{{ pb_hosts }}"
+
+- import_playbook: swarm-join.template.yaml
+  vars:
+    pb_workers: "{{ pb_workers }}"
+    pb_swarm_info: "{{ hostvars[groups[pb_hosts][0]]['f_swarm_info'] }}"

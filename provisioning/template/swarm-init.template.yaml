@@ -1,0 +1,41 @@
+---
+- name: Initialize a docker swarm
+  hosts: "{{ pb_hosts }}"
+  remote_user: vagrant
+  gather_facts: no
+
+  tasks:
+    - name: get IP address of host
+      shell: getent hosts {{ inventory_hostname }} | awk '{print $1}'
+      register: ip_addr
+      delegate_to: manager
+      changed_when: false
+
+    - set_fact:
+        ip_addr: "{{ ip_addr.stdout }}"
+
+    - name: Initialize or get join token command
+      shell: >
+        docker swarm init --advertise-addr {{ ip_addr }}
+        ||
+        docker swarm join-token worker
+      register: "swarm_init_result"
+      failed_when:
+        - "swarm_init_result.rc != 0"
+        - '"This node is already part of a swarm" not in swarm_init_result.stderr'
+      changed_when:
+        - "swarm_init_result.rc == 0"
+        - '"Swarm initialized" in swarm_init_result.stdout'
+
+    - set_fact:
+        f_swarm_info_list: "{{ swarm_init_result.stdout | \
+          regex_search('docker swarm join --token (.+) ([0-9\\.]+):([0-9]+)', \
+          '\\1', '\\2', '\\3', multiline=True) }}"
+
+    - set_fact:
+        f_swarm_info:
+          token: "{{ f_swarm_info_list[0] }}"
+          addr: "{{ f_swarm_info_list[1] }}"
+          port: "{{ f_swarm_info_list[2] }}"
+
+    - debug: var=f_swarm_info

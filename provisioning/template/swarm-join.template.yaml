@@ -1,0 +1,28 @@
+---
+- name: Join a docker swarm
+  hosts: "{{ pb_workers }}"
+  remote_user: vagrant
+  gather_facts: no
+
+  vars:
+    swarm_info: "{{ pb_swarm_info }}"
+
+  tasks:
+    - name: Join swarm command
+      shell: >
+        docker swarm join --token
+        {{ swarm_info.token }} {{ swarm_info.addr }}:{{ swarm_info.port }}
+      register: swarm_join_result
+      failed_when:
+        - "swarm_join_result.rc != 0"
+        - '"This node is already part of a swarm" not in swarm_join_result.stderr'
+      changed_when:
+        - "swarm_join_result.rc == 0"
+        - '"This node joined a swarm as a worker" in swarm_join_result.stdout'
+
+    - debug: >
+        msg="{{
+          swarm_join_result.stdout
+          if swarm_join_result.stdout
+          else swarm_join_result.stderr.split('Error response from daemon: ', 1)[1]
+        }}"

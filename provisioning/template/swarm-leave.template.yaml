@@ -1,0 +1,46 @@
+---
+- name: Leave a docker swarm (workers)
+  hosts: "{{ pb_workers }}"
+  remote_user: vagrant
+  gather_facts: no
+
+  tasks:
+    - name: Leave swarm command
+      shell: docker swarm leave
+      no_log: true
+      register: swarm_leave_result
+      failed_when:
+        - "swarm_leave_result.rc != 0"
+        - '"This node is not part of a swarm" not in swarm_leave_result.stderr'
+      changed_when:
+        - "swarm_leave_result.rc == 0"
+
+    - debug: >
+        msg={{
+          swarm_leave_result.stderr.split(': ', 1)[1]
+          if swarm_leave_result.stderr
+          else swarm_leave_result.stdout
+        }}
+
+- name: Leave a docker swarm (swarm manager)
+  hosts: "{{ pb_managers }}"
+  remote_user: vagrant
+  gather_facts: no
+
+  tasks:
+    - name: Leave swarm command (force)
+      shell: docker swarm leave --force
+      no_log: true
+      register: swarm_leave_result
+      failed_when:
+        - "swarm_leave_result.rc != 0"
+        - '"This node is not part of a swarm" not in swarm_leave_result.stderr'
+      changed_when:
+        - "swarm_leave_result.rc == 0"
+
+    - debug: >
+        msg={{
+          swarm_leave_result.stderr.split('Error response from daemon: ', 1)[1]
+          if swarm_leave_result.stderr
+          else swarm_leave_result.stdout
+        }}
