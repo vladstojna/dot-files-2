@@ -1,0 +1,26 @@
+---
+- hosts: "{{ pb_hosts }}"
+  remote_user: vagrant
+  gather_facts: yes
+
+  vars:
+    home: "{{ ansible_env.HOME }}"
+    src: "{{ playbook_dir }}/../{{ pb_src }}"
+    dest: "{{ home ~ '/' ~ pb_dest if pb_dest is defined else home | default(home) }}"
+
+  tasks:
+    - debug: var=src
+    - debug: var=dest
+
+    - name: Create {{ dest }} if it does not exist
+      file:
+        path: "{{ dest }}"
+        state: directory
+        recurse: yes
+
+    - name: Copy files from {{ src }}
+      copy:
+        src: "{{ src }}"
+        dest: "{{ dest }}"
+        remote_src: no
+        force: yes
