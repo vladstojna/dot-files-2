@@ -5,8 +5,11 @@
 
   vars:
     home: "{{ ansible_env.HOME }}"
-    src: "{{ playbook_dir }}/../{{ pb_src }}"
-    dest: "{{ home ~ '/' ~ pb_dest if pb_dest is defined else home | default(home) }}"
+    src: "{{ playbook_dir ~ '/../' ~ pb_src }}"
+    dest: "{{ home ~ '/' ~ pb_dest \
+      if pb_dest is defined and pb_dest | length > 0 \
+      else home | \
+      default(home) }}"
 
   tasks:
     - debug: var=src

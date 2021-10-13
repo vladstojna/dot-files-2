@@ -4,32 +4,30 @@
   gather_facts: no
 
   vars:
-    tagged_image: "{{ pb_image }}:{{ pb_tag }}"
-    workdir: "{{ pb_workdir }}"
-    extra: "{{ pb_extra_args | default('', true) | trim }}"
-    rebuild: ""
+    extra_tr: "{{ extra | default('', true) | trim }}"
+    rebuild_tr: "{{ rebuild | default('', true) | trim }}"
 
   tasks:
-    - debug: var=tagged_image
+    - debug: var=image
     - debug: var=workdir
-    - debug: var=extra
-    - debug: var=rebuild
+    - debug: var=extra_tr
+    - debug: var=rebuild_tr
 
     - name: Get existing docker images
       command: docker images --format {%raw%}'{{.ID}}:{{.Repository}}:{{.Tag}}'{%endraw%}
       register: docker_images_result
       changed_when: >
-        (tagged_image not in docker_images_result.stdout)
+        (image not in docker_images_result.stdout)
         or
-        (extra | length > 0)
+        (extra_tr | length > 0)
         or
-        (rebuild | length > 0)
+        (rebuild_tr | length > 0)
       notify: Build image
 
     - debug: msg={{ docker_images_result.stdout_lines }}
 
   handlers:
     - name: Build image
-      command: docker build -t {{ tagged_image }} {{ extra }} .
+      command: docker build -t {{ image }} {{ extra_tr }} .
       args:
         chdir: "{{ workdir }}"
