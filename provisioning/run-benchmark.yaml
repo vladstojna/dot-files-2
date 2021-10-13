@@ -120,9 +120,17 @@
         label: "{{ item.0.node }}"
 
     - set_fact:
-        f_output_file: "{{ output_file }}"
+        f_output_file:
+          path: "{{ output_file }}"
+          suffix:
+            - "{{ replicas }}r"
+            - "{{ workload }}"
+            - "{{ operation_count }}"
+            - "{{ threads }}t"
+            - "{{ (target == 0) | ternary('unthrottled', target) }}"
 
     - debug: var=f_node_containers
+    - debug: var=f_output_file
 
 - hosts: clients
   remote_user: vagrant
@@ -133,11 +141,24 @@
     output_file: "{{ hostvars[swarm_manager]['f_output_file'] }}"
     containers: "{{ hostvars[swarm_manager]['f_node_containers'][inventory_hostname] }}"
     dest: "{{ ansible_env.HOME }}/results"
+    common_suff: "{{ output_file.suffix | join('-') }}-{{ inventory_hostname }}"
 
   tasks:
     - debug: var=swarm_manager
     - debug: var=output_file
     - debug: var=containers
+
+    - name: Get UNIX timestamp
+      command: date +%s%3N
+      register: unix_timestamp
+      delegate_to: manager
+      changed_when: false
+
+    - name: Get destination directory in controller
+      shell: echo $HOME/results
+      delegate_to: manager
+      register: controller_dest
+      changed_when: false
 
     - name: Delete {{ dest }} contents
       file:
@@ -150,8 +171,8 @@
     - name: Copy result files from each container
       shell: >
         docker cp
-        {{ item }}:{{ output_file }}
-        {{ dest }}/results.{{ inventory_hostname }}.{{ index }}.json
+        {{ item }}:{{ output_file.path }}
+        {{ dest }}/results-{{ unix_timestamp.stdout }}-{{ common_suff }}.{{ index }}.json
       loop: "{{ containers }}"
       loop_control:
         index_var: index
@@ -163,12 +184,6 @@
 
     - set_fact:
         file_list: "{{ file_list.stdout_lines }}"
-
-    - name: Get destination directory in controller
-      shell: echo $HOME/results
-      delegate_to: manager
-      register: controller_dest
-      changed_when: false
 
     - name: Fetch files from {{ dest }}/* to controller's {{ controller_dest.stdout }}
       fetch:
