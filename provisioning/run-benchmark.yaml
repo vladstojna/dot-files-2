@@ -44,13 +44,7 @@
     - set_fact:
         connection_addr: "{{ connection_addr.stdout }}:{{ connection_port }}"
 
-    - debug:
-        msg:
-          - "Image: {{ image }}"
-          - "Network: {{ network }}"
-          - "Service: {{ service }}"
-          - "Server: {{ server }}:{{ connection_port }} ({{ connection_addr }})"
-          - "Command: {{ create_command }}"
+    - debug: var=create_command
 
     - name: List services
       shell: docker service ls --format {%raw%}'{{.Name}}'{%endraw%}
@@ -172,6 +166,7 @@
 
     - name: Get destination directory in controller
       shell: echo $HOME/results
+      delegate_to: manager
       register: controller_dest
       changed_when: false
 
