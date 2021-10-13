@@ -35,6 +35,22 @@
       -p exportfile={{ output_file }}
 
   tasks:
+    - name: Assert arguments
+      assert:
+        that:
+          - image | trim | length > 0
+          - network | trim | length > 0
+          - service | trim | length > 0
+          - server | trim | length > 0
+          - connection_port | int > 0
+          - database | trim | length > 0
+          - replicas | int > 0
+          - workload | trim | length > 0
+          - operation_count | int > 0
+          - threads | int > 0
+          - target | int >= 0
+          - output_file | trim | length > 0
+
     - name: Get IP address of server
       shell: getent hosts {{ server }} | awk '{print $1}'
       register: connection_addr
