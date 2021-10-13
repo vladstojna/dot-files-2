@@ -14,13 +14,16 @@ RUN apt-get install -y \
     python2 \
     tar
 
-WORKDIR /work
-
 RUN groupadd ycsb
 RUN useradd -g ycsb ycsb
+
+WORKDIR /results
+RUN chown -R ycsb:ycsb .
+WORKDIR /work
 RUN chown -R ycsb:ycsb .
 
 USER ycsb
+VOLUME /results
 
 # download YCSB and extract
 RUN curl -OL \
