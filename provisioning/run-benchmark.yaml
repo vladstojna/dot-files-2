@@ -155,7 +155,13 @@
   vars:
     swarm_manager: "{{ groups['client_hosts'][0] }}"
     output_file: "{{ hostvars[swarm_manager]['f_output_file'] }}"
-    containers: "{{ hostvars[swarm_manager]['f_node_containers'][inventory_hostname] }}"
+    containers: >
+      {{
+      (inventory_hostname not in hostvars[swarm_manager]['f_node_containers'])
+      |
+      ternary([], hostvars[swarm_manager]['f_node_containers'][inventory_hostname])
+      }}
+
     timestamp: "{{ hostvars['manager']['f_timestamp'] }}"
     controller_dest: "{{ hostvars['manager']['f_destination'] }}"
     dest: "{{ ansible_env.HOME }}/results"
@@ -167,6 +173,7 @@
     - debug: var=containers
 
     - name: Delete {{ dest }} contents
+      when: containers | length > 0
       file:
         path: "{{ dest }}"
         state: "{{ item }}"
@@ -175,6 +182,7 @@
         - directory
 
     - name: Copy result files from each container
+      when: containers | length > 0
       shell: >
         docker cp
         {{ item }}:{{ output_file.path }}
@@ -184,14 +192,16 @@
         index_var: index
 
     - name: Get list of files in {{ dest }}
+      when: containers | length > 0
       shell: find {{ dest }} -maxdepth 1 -type f
       register: file_list
       changed_when: false
 
     - set_fact:
-        file_list: "{{ file_list.stdout_lines }}"
+        file_list: "{{ (containers | length > 0) | ternary(file_list.stdout_lines, containers) }}"
 
     - name: Fetch files from {{ dest }} to controller's {{ controller_dest }}
+      when: containers | length > 0
       fetch:
         src: "{{ item }}"
         dest: "{{ controller_dest }}/"
