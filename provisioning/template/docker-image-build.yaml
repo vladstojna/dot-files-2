@@ -1,0 +1,28 @@
+---
+- hosts: "{{ pb_hosts }}"
+  remote_user: vagrant
+  gather_facts: no
+
+  vars:
+    tagged_image: "{{ pb_image }}:{{ pb_tag }}"
+    workdir: "{{ pb_workdir }}"
+    extra: "{{ pb_extra_args | default('', true) | trim }}"
+
+  tasks:
+    - debug: var=tagged_image
+    - debug: var=workdir
+    - debug: var=extra
+
+    - name: Get existing docker images
+      command: docker images --format {%raw%}'{{.ID}}:{{.Repository}}:{{.Tag}}'{%endraw%}
+      register: docker_images_result
+      changed_when: (tagged_image not in docker_images_result.stdout) or (extra | length > 0)
+      notify: Build YCSB image
+
+    - debug: msg={{ docker_images_result.stdout_lines }}
+
+  handlers:
+    - name: Build image
+      command: docker build -t {{ tagged_image }} {{ extra }} .
+      args:
+        chdir: "{{ workdir }}"
