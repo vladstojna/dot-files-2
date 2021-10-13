@@ -7,17 +7,24 @@
     tagged_image: "{{ pb_image }}:{{ pb_tag }}"
     workdir: "{{ pb_workdir }}"
     extra: "{{ pb_extra_args | default('', true) | trim }}"
+    rebuild: ""
 
   tasks:
     - debug: var=tagged_image
     - debug: var=workdir
     - debug: var=extra
+    - debug: var=rebuild
 
     - name: Get existing docker images
       command: docker images --format {%raw%}'{{.ID}}:{{.Repository}}:{{.Tag}}'{%endraw%}
       register: docker_images_result
-      changed_when: (tagged_image not in docker_images_result.stdout) or (extra | length > 0)
-      notify: Build YCSB image
+      changed_when: >
+        (tagged_image not in docker_images_result.stdout)
+        or
+        (extra | length > 0)
+        or
+        (rebuild | length > 0)
+      notify: Build image
 
     - debug: msg={{ docker_images_result.stdout_lines }}
 
