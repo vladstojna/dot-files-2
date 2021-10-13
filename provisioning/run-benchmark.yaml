@@ -23,7 +23,7 @@
       docker service create
       --network {{ network }}
       --mode replicated-job
-      --replicas 5
+      --replicas {{ replicas }}
       --name {{ service }}
       {{ image }} run mongodb -s
       -P workloads/{{ workload }}
