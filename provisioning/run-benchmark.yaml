@@ -125,4 +125,59 @@
       loop_control:
         label: "{{ item.0.node }}"
 
+    - set_fact:
+        f_output_file: "{{ output_file }}"
+
     - debug: var=f_node_containers
+
+- hosts: clients
+  remote_user: vagrant
+  gather_facts: yes
+
+  vars:
+    swarm_manager: "{{ groups['client_hosts'][0] }}"
+    output_file: "{{ hostvars[swarm_manager]['f_output_file'] }}"
+    containers: "{{ hostvars[swarm_manager]['f_node_containers'][inventory_hostname] }}"
+    dest: "{{ ansible_env.HOME }}/results"
+
+  tasks:
+    - debug: var=swarm_manager
+    - debug: var=output_file
+    - debug: var=containers
+
+    - name: Delete {{ dest }} contents
+      file:
+        path: "{{ dest }}"
+        state: "{{ item }}"
+      loop:
+        - absent
+        - directory
+
+    - name: Copy result files from each container
+      shell: >
+        docker cp
+        {{ item }}:{{ output_file }}
+        {{ dest }}/results.{{ inventory_hostname }}.{{ index }}.json
+      loop: "{{ containers }}"
+      loop_control:
+        index_var: index
+
+    - name: Get list of files in {{ dest }}
+      shell: find {{ dest }} -maxdepth 1 -type f
+      register: file_list
+      changed_when: false
+
+    - set_fact:
+        file_list: "{{ file_list.stdout_lines }}"
+
+    - name: Get destination directory in controller
+      shell: echo $HOME/results
+      register: controller_dest
+      changed_when: false
+
+    - name: Fetch files from {{ dest }}/* to controller's {{ controller_dest.stdout }}
+      fetch:
+        src: "{{ item }}"
+        dest: "{{ controller_dest.stdout }}/"
+        flat: yes
+      loop: "{{ file_list }}"
