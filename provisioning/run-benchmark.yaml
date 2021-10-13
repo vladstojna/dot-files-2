@@ -132,6 +132,22 @@
     - debug: var=f_node_containers
     - debug: var=f_output_file
 
+- name: Get UNIX timestamp and result destination path
+  hosts: manager
+  gather_facts: yes
+
+  tasks:
+    - name: Get UNIX timestamp (command)
+      command: date +%s%3N
+      register: f_timestamp
+      changed_when: false
+
+    - set_fact:
+        f_timestamp: "{{ f_timestamp.stdout }}"
+
+    - set_fact:
+        f_destination: "{{ ansible_env.HOME }}/results"
+
 - hosts: clients
   remote_user: vagrant
   gather_facts: yes
@@ -140,25 +156,15 @@
     swarm_manager: "{{ groups['client_hosts'][0] }}"
     output_file: "{{ hostvars[swarm_manager]['f_output_file'] }}"
     containers: "{{ hostvars[swarm_manager]['f_node_containers'][inventory_hostname] }}"
+    timestamp: "{{ hostvars['manager']['f_timestamp'] }}"
+    controller_dest: "{{ hostvars['manager']['f_destination'] }}"
     dest: "{{ ansible_env.HOME }}/results"
-    common_suff: "{{ output_file.suffix | join('-') }}-{{ inventory_hostname }}"
+    common_suff: "{{ timestamp }}-{{ output_file.suffix | join('-') }}-{{ inventory_hostname }}"
 
   tasks:
     - debug: var=swarm_manager
     - debug: var=output_file
     - debug: var=containers
-
-    - name: Get UNIX timestamp
-      command: date +%s%3N
-      register: unix_timestamp
-      delegate_to: manager
-      changed_when: false
-
-    - name: Get destination directory in controller
-      shell: echo $HOME/results
-      delegate_to: manager
-      register: controller_dest
-      changed_when: false
 
     - name: Delete {{ dest }} contents
       file:
@@ -172,7 +178,7 @@
       shell: >
         docker cp
         {{ item }}:{{ output_file.path }}
-        {{ dest }}/results-{{ unix_timestamp.stdout }}-{{ common_suff }}.{{ index }}.json
+        {{ dest }}/results-{{ common_suff }}.{{ index }}.json
       loop: "{{ containers }}"
       loop_control:
         index_var: index
@@ -185,9 +191,9 @@
     - set_fact:
         file_list: "{{ file_list.stdout_lines }}"
 
-    - name: Fetch files from {{ dest }}/* to controller's {{ controller_dest.stdout }}
+    - name: Fetch files from {{ dest }} to controller's {{ controller_dest }}
       fetch:
         src: "{{ item }}"
-        dest: "{{ controller_dest.stdout }}/"
+        dest: "{{ controller_dest }}/"
         flat: yes
       loop: "{{ file_list }}"
