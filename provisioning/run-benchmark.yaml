@@ -80,8 +80,11 @@
 
     - name: Parse {{ service }} tasks into a more convenient format
       set_fact:
-        tasks_result: "{{ tasks_result | default([]) + \
-          [{'id': item[0], 'name': item[1], 'node': item[2] }] }}"
+        tasks_result: >
+          {{ tasks_result | default([])
+          +
+          [{'id': item[0], 'name': item[1], 'node': item[2] }]
+          }}
       loop: "{{ tasks_result_tmp.stdout_lines | map('regex_findall', regex) }}"
       loop_control:
         label: "{{ item[1] }}"
@@ -105,16 +108,20 @@
       changed_when: false
 
     - debug:
-        msg: "Task '{{ item.0.name }}' on node '{{ item.0.node }}' \
-          uses container with id '{{ item.1.stdout }}'"
+        msg: >
+          Task '{{ item.0.name }}' on node '{{ item.0.node }}'
+          uses container with id '{{ item.1.stdout }}'
       loop: "{{ tasks_result | zip(task_containers.results) | list }}"
       loop_control:
         label: "{{ item.0.name }} -> {{ item.1.stdout }}"
 
     - name: Construct dictionary which maps node to containers
       set_fact:
-        f_node_containers: "{{ f_node_containers | default({}) | \
-          combine({ item.0.node: [item.1.stdout] }, list_merge='append_rp') }}"
+        f_node_containers: >
+          {{
+          f_node_containers | default({}) |
+          combine({ item.0.node: [item.1.stdout] }, list_merge='append_rp')
+          }}
       loop: "{{ tasks_result | zip(task_containers.results) | list }}"
       loop_control:
         label: "{{ item.0.node }}"
