@@ -1,0 +1,128 @@
+---
+- hosts: client_hosts
+  remote_user: vagrant
+  gather_facts: no
+
+  vars:
+    image: ycsb:latest
+    network: ycsb-net
+    service: ycsb-service
+
+    server: "{{ groups['server_hosts'][0] }}"
+    connection_port: 12000
+    database: ycsb
+
+    replicas: 5
+    workload: workloadc
+    operation_count: 100
+    threads: 1
+    target: 0
+    output_file: /results/run.json
+
+    create_command: >
+      docker service create
+      --network {{ network }}
+      --mode replicated-job
+      --replicas 5
+      --name {{ service }}
+      {{ image }} run mongodb -s
+      -P workloads/{{ workload }}
+      -p mongodb.url=mongodb://{{ connection_addr }}/{{ database }}?w=1
+      -p operationcount={{ operation_count }}
+      -threads {{ threads }}
+      -target {{ target }}
+      -p exporter=site.ycsb.measurements.exporter.JSONArrayMeasurementsExporter
+      -p exportfile={{ output_file }}
+
+  tasks:
+    - name: Get IP address of server
+      shell: getent hosts {{ server }} | awk '{print $1}'
+      register: connection_addr
+      delegate_to: manager
+      changed_when: false
+
+    - set_fact:
+        connection_addr: "{{ connection_addr.stdout }}:{{ connection_port }}"
+
+    - debug:
+        msg:
+          - "Image: {{ image }}"
+          - "Network: {{ network }}"
+          - "Service: {{ service }}"
+          - "Server: {{ server }}:{{ connection_port }} ({{ connection_addr }})"
+          - "Command: {{ create_command }}"
+
+    - name: List services
+      shell: docker service ls --format {%raw%}'{{.Name}}'{%endraw%}
+      changed_when: false
+      register: services_result
+
+    - name: List networks
+      shell: docker network ls --format {%raw%}'{{.Name}}'{%endraw%}
+      changed_when: false
+      register: networks_result
+
+    - debug: msg={{ services_result.stdout_lines }}
+    - debug: msg={{ networks_result.stdout_lines }}
+
+    - name: Remove service {{ service }} if exists
+      when: service in services_result.stdout_lines
+      shell: docker service rm {{ service }}
+
+    - name: Create network {{ network }} if does not exist
+      when: network not in networks_result.stdout_lines
+      shell: docker network create --driver overlay {{ network }}
+
+    - name: Create service {{ service }}
+      shell: "{{ create_command }}"
+
+    - name: List {{ service }} tasks
+      shell: >
+        docker service ps {{ service }}
+        --filter desired-state=complete
+        --format {%raw%}'<{{.ID}}><{{.Name}}><{{.Node}}>'{%endraw%}
+      register: tasks_result_tmp
+      changed_when: false
+
+    - name: Parse {{ service }} tasks into a more convenient format
+      set_fact:
+        tasks_result: "{{ tasks_result | default([]) + \
+          [{'id': item[0], 'name': item[1], 'node': item[2] }] }}"
+      loop: "{{ tasks_result_tmp.stdout_lines | map('regex_findall', regex) }}"
+      loop_control:
+        label: "{{ item[1] }}"
+      vars:
+        regex: "<(.*?)>"
+
+    - debug:
+        msg: "Task '{{ item.name }}' on node '{{ item.node }}' with id '{{ item.id }}'"
+      loop: "{{ tasks_result }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Get task container
+      shell: >
+        docker inspect
+        --format {%raw%}'{{.Status.ContainerStatus.ContainerID}}'{%endraw%} {{ item.id }}
+      loop: "{{ tasks_result }}"
+      loop_control:
+        label: "{{ item.name }}"
+      register: task_containers
+      changed_when: false
+
+    - debug:
+        msg: "Task '{{ item.0.name }}' on node '{{ item.0.node }}' \
+          uses container with id '{{ item.1.stdout }}'"
+      loop: "{{ tasks_result | zip(task_containers.results) | list }}"
+      loop_control:
+        label: "{{ item.0.name }} -> {{ item.1.stdout }}"
+
+    - name: Construct dictionary which maps node to containers
+      set_fact:
+        f_node_containers: "{{ f_node_containers | default({}) | \
+          combine({ item.0.node: [item.1.stdout] }, list_merge='append_rp') }}"
+      loop: "{{ tasks_result | zip(task_containers.results) | list }}"
+      loop_control:
+        label: "{{ item.0.node }}"
+
+    - debug: var=f_node_containers
