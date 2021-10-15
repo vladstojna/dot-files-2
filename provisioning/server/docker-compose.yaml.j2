@@ -1,0 +1,80 @@
+# {{ ansible_managed }}
+
+version: "3"
+services:
+
+  # Shards
+{% for service in services.shards %}
+  {{ service.name }}:
+    container_name: {{ service.name }}
+    image: {{ deployment.image }}
+    command: >
+      mongod
+      --shardsvr
+      --replSet {{ service.repl_set }}
+      --noauth
+      --bind_ip_all
+      --port 27017
+    environment:
+      TERM: xterm
+    networks:
+      - {{ deployment.network }}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - {{ service.volume }}:/data/db
+      - {{ service.config }}:/data/configdb
+{% endfor %}
+
+  # Config server
+  {{ services.config_sv.name }}:
+    container_name: {{ services.config_sv.name }}
+    image: {{ deployment.image }}
+    command: >
+      mongod
+      --configsvr
+      --replSet {{ services.config_sv.repl_set }}
+      --noauth
+      --bind_ip_all
+      --port 27017
+    environment:
+      TERM: xterm
+    networks:
+      - {{ deployment.network }}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - {{ services.config_sv.volume }}:/data/db
+      - {{ services.config_sv.config }}:/data/configdb
+
+  # Routers
+  {{ services.router.name }}:
+    container_name: {{ services.router.name }}
+    image: {{ deployment.image }}
+    depends_on:
+      - {{ services.config_sv.name }}
+    command: >
+      mongos
+      --configdb {{ services.config_sv.repl_set }}/{{ services.config_sv.name }}:27017
+      --bind_ip_all
+      --port 27017
+    environment:
+      TERM: xterm
+    networks:
+      - {{ deployment.network }}
+    ports:
+      - {{ database.connection.port_no }}:27017
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    deploy:
+      replicas: {{ services.router.count }}
+
+networks:
+  {{ deployment.network }}:
+    driver: overlay
+
+volumes:
+  {{ services.config_sv.volume }}:
+  {{ services.config_sv.config }}:
+{% for service in services.shards %}
+  {{ service.volume }}:
+  {{ service.config }}:
+{% endfor %}
