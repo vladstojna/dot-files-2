@@ -1,0 +1,65 @@
+---
+- hosts: server_hosts
+  remote_user: vagrant
+  gather_facts: yes
+
+  vars:
+    shard_count: 2
+    router_count: 1
+
+  tasks:
+    - import_tasks: tasks/stack-assert.yaml
+    - name: Assert arguments
+      assert:
+        that:
+          - database.connection.port_no | int > 0
+          - shard_count | int > 0
+          - router_count | int > 0
+
+    - name: Generate shard list
+      set_fact:
+        shard_list: >
+          {{
+            shard_list | default([]) +
+            [{
+              'name': prefix ~ item,
+              'volume': prefix ~ item ~ '_data',
+              'config': prefix ~ item ~ '_config',
+              'repl_set': 'shard_set' ~ item
+            }]
+          }}
+      loop: "{{ range(1, shard_count | int + 1) | list }}"
+      vars:
+        prefix: mongo_shard
+
+    - name: Generate config server
+      set_fact:
+        config_sv:
+          name: "{{ prefix }}"
+          volume: "{{ prefix }}_data"
+          config: "{{ prefix }}_config"
+          repl_set: "config_set"
+      vars:
+        prefix: mongo_cfg
+
+
+    - name: Generate router metadata
+      set_fact:
+        router_metadata:
+          name: mongos
+          count: "{{ router_count | int }}"
+
+    - set_fact:
+        services:
+          shards: "{{ shard_list }}"
+          config_sv: "{{ config_sv }}"
+          router: "{{ router_metadata }}"
+
+    - debug: var=services
+
+    - name: Create templated {{ deployment.compose_file }}
+      template:
+        src: "{{ playbook_dir }}/server/{{ deployment.compose_file }}.j2"
+        dest: "{{ deployment.compose_file }}"
+        remote_src: no
+        force: yes
