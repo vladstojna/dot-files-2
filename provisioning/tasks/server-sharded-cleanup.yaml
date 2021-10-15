@@ -1,0 +1,34 @@
+---
+- name: Wait until all services are removed
+  shell: |
+    until [ -z "$({{ ls_cmd }})" ]; do
+      sleep 1;
+    done
+  changed_when: false
+  vars:
+    ls_cmd: docker service ls --quiet --filter label=com.docker.stack.namespace={{ stack.name }}
+
+- name: Wait until all networks are removed
+  shell: |
+    until [ -z "$({{ ls_cmd }})" ]; do
+      sleep 1;
+    done
+  changed_when: false
+  vars:
+    ls_cmd: docker network ls --quiet --filter label=com.docker.stack.namespace={{ stack.name}}
+
+- name: Wait...
+  pause:
+    seconds: 1
+
+- name: Remove unused volumes
+  command: docker volume prune --force
+  register: remove_volumes
+  delegate_to: "{{ item }}"
+  loop: "{{ groups['servers'] }}"
+
+- debug:
+    msg: "{{ item.stdout_lines }}"
+  loop: "{{ remove_volumes.results }}"
+  loop_control:
+    label: "{{ item.cmd }}"
