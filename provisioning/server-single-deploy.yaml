@@ -1,0 +1,34 @@
+---
+- hosts: server_hosts
+  remote_user: vagrant
+  gather_facts: no
+
+  vars:
+    remove_volumes: true
+
+  tasks:
+    - import_tasks: tasks/server-single-exists.yaml
+      notify:
+        - Stop container
+        - Remove volumes
+
+    - meta: flush_handlers
+
+    - name: Create container {{ container.name }}
+      shell: >
+        docker container run
+        --rm
+        --name {{ container.name }}
+        --mount type=volume,src={{ container.data_vol }},target=/data/db
+        --mount type=volume,src={{ container.config_vol }},target=/data/configdb
+        --publish {{ database.connection.port_no }}:27017
+        --detach
+        {{ container.image }}
+
+  handlers:
+    - name: Stop container
+      shell: docker stop {{ container.name }}
+
+    - name: Remove volumes
+      shell: docker volume rm --force {{ container.data_vol }} {{ container.config_vol }}
+      when: remove_volumes
