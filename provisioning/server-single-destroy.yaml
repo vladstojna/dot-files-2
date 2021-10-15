@@ -1,0 +1,21 @@
+---
+- hosts: server_hosts
+  remote_user: vagrant
+  gather_facts: no
+
+  vars:
+    remove_volumes: true
+
+  tasks:
+    - import_tasks: tasks/server-single-exists.yaml
+      notify:
+        - Stop container
+        - Remove volumes
+
+  handlers:
+    - name: Stop container
+      shell: docker stop {{ container.name }}
+
+    - name: Remove volumes
+      shell: docker volume rm --force {{ container.data_vol }} {{ container.config_vol }}
+      when: remove_volumes
