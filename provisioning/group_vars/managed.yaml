@@ -1,0 +1,6 @@
+---
+database:
+  name: ycsb
+  collection: usertable
+  connection:
+    port_no: 12000
