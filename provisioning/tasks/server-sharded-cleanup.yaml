@@ -24,6 +24,7 @@
 - name: Remove unused volumes
   command: docker volume prune --force
   register: remove_volumes
+  run_once: true
   delegate_to: "{{ item }}"
   loop: "{{ groups['servers'] }}"
 
