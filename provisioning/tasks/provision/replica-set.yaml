@@ -20,14 +20,16 @@
     loop_var: cont_svc_pair
     label: "{{ cont_svc_pair }}"
   shell: >
-    docker exec {{ cont_svc_pair.0 }}
-    bash -c "echo '
-    rs.initiate();
+    docker exec {{ cont_svc_pair.0 }} mongosh
+    --quiet
+    --eval 'rs.initiate();
     cfg = rs.conf();
-    cfg.members[0].host = \"{{ cont_svc_pair.1 }}\";
+    cfg.members[0].host = "{{ cont_svc_pair.1 }}";
     rs.reconfig(cfg);
-    rs.status()
-    ' | mongosh"
+    rs.status()'
   register: provision_replset_result
   changed_when:
-    - '"MongoServerError: already initialized" not in provision_replset_result.stdout'
+    - provision_replset_result.rc == 0
+  failed_when:
+    - provision_replset_result.rc != 0
+    - '"MongoServerError: already initialized" not in provision_replset_result.stderr'
