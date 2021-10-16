@@ -19,7 +19,7 @@
 
 - name: Wait...
   pause:
-    seconds: 1
+    seconds: 3
 
 - name: Remove unused volumes
   command: docker volume prune --force
