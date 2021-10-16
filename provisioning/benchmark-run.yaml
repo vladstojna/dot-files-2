@@ -15,6 +15,7 @@
   vars:
     replicas: 1
     workload: workloadc
+    batch_size: 1
     operation_count: 100
     threads: 1
     target: 0
@@ -25,8 +26,9 @@
         - "{{ replicas }}r"
         - "{{ workload }}"
         - "{{ operation_count }}"
+        - "{{ batch_size }}b"
         - "{{ threads }}t"
-        - "{{ (target == 0) | ternary('unthrottled', target) }}"
+        - "{{ (target == 0) | ternary('unthrottled', target ~ 'ops') }}"
 
   tasks:
     - name: Assert arguments
@@ -35,6 +37,7 @@
           - replicas | int > 0
           - workload | trim | length > 0
           - operation_count | int > 0
+          - batch_size | int > 0
           - threads | int > 0
           - target | int >= 0
 
@@ -90,6 +93,7 @@
         {{ ycsb.image }} run mongodb -s
         -P workloads/{{ workload }}
         -p mongodb.url=mongodb://{{ connection_addr }}/{{ database.name }}?w=1
+        -p mongodb.batchsize={{ batch_size }}
         -p operationcount={{ operation_count }}
         -threads {{ threads }}
         -target {{ target }}
