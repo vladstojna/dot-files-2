@@ -1,4 +1,13 @@
 ---
+- hosts: manager clients
+  remote_user: vagrant
+  gather_facts: yes
+
+  tasks:
+    - set_fact:
+        results_dest: "{{ ansible_env.HOME }}/results"
+
+
 - hosts: client_hosts
   remote_user: vagrant
   gather_facts: no
@@ -9,7 +18,15 @@
     operation_count: 100
     threads: 1
     target: 0
-    output_file: /results/run.json
+
+    output_file:
+      container_path: /results/run.json
+      metadata:
+        - "{{ replicas }}r"
+        - "{{ workload }}"
+        - "{{ operation_count }}"
+        - "{{ threads }}t"
+        - "{{ (target == 0) | ternary('unthrottled', target) }}"
 
   tasks:
     - name: Assert arguments
@@ -20,7 +37,6 @@
           - operation_count | int > 0
           - threads | int > 0
           - target | int >= 0
-          - output_file | trim | length > 0
 
     - name: Get IP address of {{ groups['server_hosts'][0] }}
       shell: getent hosts {{ groups['server_hosts'][0] }} | awk '{print $1}'
@@ -31,31 +47,40 @@
     - set_fact:
         connection_addr: "{{ connection_addr.stdout }}:{{ database.connection.port_no }}"
 
-    - name: List services
-      shell: docker service ls --format {%raw%}'{{.Name}}'{%endraw%}
+    - name: Get service {{ ycsb.service }} id
+      shell: docker service ls --quiet --filter name={{ ycsb.service }}
       changed_when: false
-      register: services_result
+      register: service_ls
 
-    - name: List networks
-      shell: docker network ls --format {%raw%}'{{.Name}}'{%endraw%}
-      changed_when: false
-      register: networks_result
-
-    - debug: msg={{ services_result.stdout_lines }}
-    - debug: msg={{ networks_result.stdout_lines }}
+    - debug: msg={{ service_ls.stdout_lines }}
 
     - name: Remove service {{ ycsb.service }} if exists
-      when: ycsb.service in services_result.stdout_lines
-      shell: docker service rm {{ ycsb.service }}
+      when: service_ls.stdout_lines | length > 0
+      shell: docker service rm {{ service_ls.stdout_lines | join(' ') }}
 
-    - name: Create network {{ ycsb.network }} if does not exist
-      when: ycsb.network not in networks_result.stdout_lines
+    - name: Get network {{ ycsb.network }} id
+      shell: docker network ls --no-trunc --quiet --filter name={{ ycsb.network }}
+      changed_when: false
+      register: network_ls
+
+    - debug: msg={{ network_ls.stdout_lines }}
+
+    - name: Remove network {{ ycsb.network }} if exists
+      when: network_ls.stdout_lines | length > 0
+      shell: docker network rm {{ network_ls.stdout_lines | join(' ') }}
+
+    - name: Create network {{ ycsb.network }}
       shell: >
-        docker network create --driver overlay {{ ycsb.network }} --label {{ ycsb.label }}
+        docker network create
+        --driver overlay
+        --label {{ ycsb.label }}
+        {{ ycsb.network }}
+      register: create_network
 
     - name: Create service {{ ycsb.service }}
       shell: >
         docker service create
+        --quiet
         --network {{ ycsb.network }}
         --mode replicated-job
         --replicas {{ replicas }}
@@ -69,149 +94,72 @@
         -threads {{ threads }}
         -target {{ target }}
         -p exporter=site.ycsb.measurements.exporter.JSONArrayMeasurementsExporter
-        -p exportfile={{ output_file }}
-
-    - name: List {{ ycsb.service }} tasks
-      shell: >
-        docker service ps {{ ycsb.service }}
-        --filter desired-state=complete
-        --format {%raw%}'<{{.ID}}><{{.Name}}><{{.Node}}>'{%endraw%}
-      register: tasks_result_tmp
-      changed_when: false
-
-    - name: Parse {{ ycsb.service }} tasks into a more convenient format
-      set_fact:
-        tasks_result: >
-          {{ tasks_result | default([])
-          +
-          [{'id': item[0], 'name': item[1], 'node': item[2] }]
-          }}
-      loop: "{{ tasks_result_tmp.stdout_lines | map('regex_findall', regex) }}"
-      loop_control:
-        label: "{{ item[1] }}"
-      vars:
-        regex: "<(.*?)>"
+        -p exportfile={{ output_file.container_path }}
+      register: create_service
 
     - debug:
-        msg: "Task '{{ item.name }}' on node '{{ item.node }}' with id '{{ item.id }}'"
-      loop: "{{ tasks_result }}"
-      loop_control:
-        label: "{{ item.name }}"
+        msg:
+          - Command {{ create_service.cmd }}
+          - Service ID {{ create_service.stdout }}
 
-    - name: Get task container
+    - name: Get all containers with label {{ ycsb.label }} and service {{ create_service.stdout }}
       shell: >
-        docker inspect
-        --format {%raw%}'{{.Status.ContainerStatus.ContainerID}}'{%endraw%} {{ item.id }}
-      loop: "{{ tasks_result }}"
-      loop_control:
-        label: "{{ item.name }}"
-      register: task_containers
+        docker container ls
+        --all
+        --quiet
+        --no-trunc
+        --filter label={{ ycsb.label }}
+        --filter label=com.docker.swarm.service.id={{ create_service.stdout }}
+      delegate_to: "{{ item }}"
+      run_once: true
+      loop: "{{ groups.clients }}"
+      register: container_ls
       changed_when: false
-
-    - debug:
-        msg: >
-          Task '{{ item.0.name }}' on node '{{ item.0.node }}'
-          uses container with id '{{ item.1.stdout }}'
-      loop: "{{ tasks_result | zip(task_containers.results) | list }}"
-      loop_control:
-        label: "{{ item.0.name }} -> {{ item.1.stdout }}"
-
-    - name: Construct dictionary which maps node to containers
-      set_fact:
-        f_node_containers: >
-          {{
-          f_node_containers | default({}) |
-          combine({ item.0.node: [item.1.stdout] }, list_merge='append_rp')
-          }}
-      loop: "{{ tasks_result | zip(task_containers.results) | list }}"
-      loop_control:
-        label: "{{ item.0.node }}"
-
     - set_fact:
-        f_output_file:
-          path: "{{ output_file }}"
-          suffix:
-            - "{{ replicas }}r"
-            - "{{ workload }}"
-            - "{{ operation_count }}"
-            - "{{ threads }}t"
-            - "{{ (target == 0) | ternary('unthrottled', target) }}"
+        container_ls: >
+          {{ dict(
+            container_ls.results | map(attribute='item') |
+            zip(container_ls.results | map(attribute='stdout_lines')))
+          }}
 
-    - debug: var=f_node_containers
-    - debug: var=f_output_file
+    - debug: var=container_ls
 
-- name: Get UNIX timestamp and result destination path
-  hosts: manager
-  gather_facts: yes
-
-  tasks:
     - name: Get UNIX timestamp (command)
       command: date +%s%3N
-      register: f_timestamp
+      register: timestamp
+      run_once: true
       changed_when: false
-
     - set_fact:
-        f_timestamp: "{{ f_timestamp.stdout }}"
+        timestamp: "{{ timestamp.stdout }}"
 
-    - set_fact:
-        f_destination: "{{ ansible_env.HOME }}/results"
-
-- hosts: clients
-  remote_user: vagrant
-  gather_facts: yes
-
-  vars:
-    swarm_manager: "{{ groups['client_hosts'][0] }}"
-    output_file: "{{ hostvars[swarm_manager]['f_output_file'] }}"
-    containers: >
-      {{
-      (inventory_hostname not in hostvars[swarm_manager]['f_node_containers'])
-      |
-      ternary([], hostvars[swarm_manager]['f_node_containers'][inventory_hostname])
-      }}
-
-    timestamp: "{{ hostvars['manager']['f_timestamp'] }}"
-    controller_dest: "{{ hostvars['manager']['f_destination'] }}"
-    dest: "{{ ansible_env.HOME }}/results"
-    common_suff: "{{ timestamp }}-{{ output_file.suffix | join('-') }}-{{ inventory_hostname }}"
-
-  tasks:
-    - debug: var=swarm_manager
-    - debug: var=output_file
-    - debug: var=containers
-
-    - name: Delete {{ dest }} contents
-      when: containers | length > 0
-      file:
-        path: "{{ dest }}"
-        state: "{{ item }}"
-      loop:
-        - absent
-        - directory
-
-    - name: Copy result files from each container
-      when: containers | length > 0
-      shell: >
-        docker cp
-        {{ item }}:{{ output_file.path }}
-        {{ dest }}/results-{{ common_suff }}.{{ index }}.json
-      loop: "{{ containers }}"
+    - name: Fetch result files from all clients to the controller
+      when: container_ids | length > 0
+      include_tasks: tasks/client-fetch-results.yaml
+      loop: "{{ container_ls | dict2items }}"
       loop_control:
-        index_var: index
+        loop_var: result_item
+        label: "{{ delegate_host }}"
+      vars:
+        container_ids: "{{ result_item.value }}"
+        delegate_host: "{{ result_item.key }}"
+        local_dest: "{{ hostvars[delegate_host].results_dest }}"
+        controller_dest: "{{ hostvars.manager.results_dest }}"
+        container_path: "{{ output_file.container_path }}"
+        common_suffix: "{{ timestamp }}-\
+          {{ output_file.metadata | join('-') }}-\
+          {{ delegate_host }}"
 
-    - name: Get list of files in {{ dest }}
-      when: containers | length > 0
-      shell: find {{ dest }} -maxdepth 1 -type f
-      register: file_list
-      changed_when: false
+    - include_tasks: tasks/client-cleanup.yaml
+      when: container_ids | length > 0
+      loop: "{{ container_ls | dict2items }}"
+      loop_control:
+        label: "{{ delegate_host }}"
+      vars:
+        container_ids: "{{ item.value }}"
+        delegate_host: "{{ item.key }}"
 
-    - set_fact:
-        file_list: "{{ (containers | length > 0) | ternary(file_list.stdout_lines, containers) }}"
+    - name: Remove service {{ create_service.stdout }}
+      shell: docker service rm {{ create_service.stdout }}
 
-    - name: Fetch files from {{ dest }} to controller's {{ controller_dest }}
-      when: containers | length > 0
-      fetch:
-        src: "{{ item }}"
-        dest: "{{ controller_dest }}/"
-        flat: yes
-      loop: "{{ file_list }}"
+    - name: Remove network {{ create_network.stdout }}
+      shell: docker network rm {{ create_network.stdout }}
