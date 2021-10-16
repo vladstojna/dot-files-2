@@ -71,7 +71,8 @@ services:
       - {{ services.config_sv.name }}
     command: >
       mongos
-      --configdb {{ services.config_sv.repl_set }}/{{ stack.name }}_{{services.config_sv.name }}
+      --configdb
+      {{ services.config_sv.repl_set }}/{{ stack.name }}_{{services.config_sv.name }}:27017
       --bind_ip_all
       --port 27017
     environment:
