@@ -103,6 +103,11 @@ Vagrant.configure("2") do |config|
       group: "vagrant",
       mount_options: ["dmode=775", "fmode=664"]
 
+    config.vm.synced_folder "results", "/home/vagrant/results",
+      owner: "vagrant",
+      group: "vagrant",
+      mount_options: ["dmode=775", "fmode=664"]
+
     config.vm.provision "shell",
       path: "scripts/bootstrap_manager.sh",
       env: {"VAGRANT_NODE_LIST" => hosts_string(params)}
