@@ -27,6 +27,11 @@ services:
 {% for key, value in service.labels.items() %}
       {{ key }}: {{ value }}
 {% endfor %}
+    deploy:
+      labels:
+{% for key, value in service.labels.items() %}
+        {{ key }}: {{ value }}
+{% endfor %}
 {% endfor %}
 
   # Config server
@@ -52,6 +57,11 @@ services:
 {% for key, value in services.config_sv.labels.items() %}
       {{ key }}: {{ value }}
 {% endfor %}
+    deploy:
+      labels:
+{% for key, value in services.config_sv.labels.items() %}
+        {{ key }}: {{ value }}
+{% endfor %}
 
   # Routers
   {{ services.router.name }}:
@@ -61,7 +71,7 @@ services:
       - {{ services.config_sv.name }}
     command: >
       mongos
-      --configdb {{ services.config_sv.repl_set }}/{{ services.config_sv.name }}:27017
+      --configdb {{ services.config_sv.repl_set }}/{{ stack.name }}_{{services.config_sv.name }}
       --bind_ip_all
       --port 27017
     environment:
@@ -76,6 +86,8 @@ services:
       {{ services.router.label }}: {{ services.router.name }}
     deploy:
       replicas: {{ services.router.count }}
+      labels:
+        {{ services.router.label }}: {{ services.router.name }}
 
 networks:
   {{ deployment.network }}:
