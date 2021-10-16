@@ -1,7 +1,7 @@
 ---
 - hosts: server_hosts
   remote_user: vagrant
-  gather_facts: yes
+  gather_facts: no
 
   vars:
     shard_count: 2
@@ -25,7 +25,11 @@
               'name': prefix ~ item,
               'volume': prefix ~ item ~ '_data',
               'config': prefix ~ item ~ '_config',
-              'repl_set': 'shard_set' ~ item
+              'repl_set': 'shard_set' ~ item,
+              'labels': {
+                stack.label.shard: prefix ~ item,
+                stack.label.repl_set: 'shard_set' ~ item
+              }
             }]
           }}
       loop: "{{ range(1, shard_count | int + 1) | list }}"
@@ -38,9 +42,16 @@
           name: "{{ prefix }}"
           volume: "{{ prefix }}_data"
           config: "{{ prefix }}_config"
-          repl_set: "config_set"
+          repl_set: "{{ replica_set }}"
+          labels: "{{ labels_list | items2dict }}"
       vars:
         prefix: mongo_cfg
+        replica_set: config_set
+        labels_list:
+          - key: "{{ stack.label.config }}"
+            value: "{{ prefix }}"
+          - key: "{{ stack.label.repl_set }}"
+            value: "{{ replica_set }}"
 
 
     - name: Generate router metadata
@@ -48,6 +59,7 @@
         router_metadata:
           name: mongos
           count: "{{ router_count | int }}"
+          label: "{{ stack.label.router }}"
 
     - set_fact:
         services:

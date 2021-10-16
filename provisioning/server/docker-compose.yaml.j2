@@ -23,6 +23,10 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - {{ service.volume }}:/data/db
       - {{ service.config }}:/data/configdb
+    labels:
+{% for key, value in service.labels.items() %}
+      {{ key }}: {{ value }}
+{% endfor %}
 {% endfor %}
 
   # Config server
@@ -44,6 +48,10 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - {{ services.config_sv.volume }}:/data/db
       - {{ services.config_sv.config }}:/data/configdb
+    labels:
+{% for key, value in services.config_sv.labels.items() %}
+      {{ key }}: {{ value }}
+{% endfor %}
 
   # Routers
   {{ services.router.name }}:
@@ -64,6 +72,8 @@ services:
       - {{ database.connection.port_no }}:27017
     volumes:
       - /etc/localtime:/etc/localtime:ro
+    labels:
+      {{ services.router.label }}: {{ services.router.name }}
     deploy:
       replicas: {{ services.router.count }}
 
