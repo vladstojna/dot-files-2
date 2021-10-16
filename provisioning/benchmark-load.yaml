@@ -5,11 +5,6 @@
 
   vars:
     image: ycsb:latest
-
-    server: "{{ groups['server_hosts'][0] }}"
-    connection_port: 12000
-    database: ycsb
-
     workload: workloada
     record_count: 10000
     threads: 4
@@ -21,23 +16,20 @@
       assert:
         that:
           - image | trim | length > 0
-          - server | trim | length > 0
-          - connection_port | int > 0
-          - database | trim | length > 0
           - workload | trim | length > 0
           - record_count | int > 0
           - threads | int > 0
           - target | int >= 0
           - output_file | trim | length > 0
 
-    - name: Get IP address of server
-      shell: getent hosts {{ server }} | awk '{print $1}'
+    - name: Get IP address of {{ groups['server_hosts'][0] }}
+      shell: getent hosts {{ groups['server_hosts'][0] }} | awk '{print $1}'
       register: connection_addr
       delegate_to: manager
       changed_when: false
 
     - set_fact:
-        connection_addr: "{{ connection_addr.stdout }}:{{ connection_port }}"
+        connection_addr: "{{ connection_addr.stdout }}:{{ database.connection.port_no }}"
 
     - name: Run container
       shell: >
@@ -45,7 +37,7 @@
         --rm
         {{ image }} load mongodb -s
         -P workloads/{{ workload }}
-        -p mongodb.url=mongodb://{{ connection_addr }}/{{ database }}?w=1
+        -p mongodb.url=mongodb://{{ connection_addr }}/{{ database.name }}?w=1
         -p recordcount={{ record_count }}
         -threads {{ threads }}
         -target {{ target }}

@@ -8,11 +8,7 @@
     network: ycsb-net
     service: ycsb-service
 
-    server: "{{ groups['server_hosts'][0] }}"
-    connection_port: 12000
-    database: ycsb
-
-    replicas: 5
+    replicas: 1
     workload: workloadc
     operation_count: 100
     threads: 1
@@ -27,7 +23,7 @@
       --name {{ service }}
       {{ image }} run mongodb -s
       -P workloads/{{ workload }}
-      -p mongodb.url=mongodb://{{ connection_addr }}/{{ database }}?w=1
+      -p mongodb.url=mongodb://{{ connection_addr }}/{{ database.name }}?w=1
       -p operationcount={{ operation_count }}
       -threads {{ threads }}
       -target {{ target }}
@@ -41,9 +37,6 @@
           - image | trim | length > 0
           - network | trim | length > 0
           - service | trim | length > 0
-          - server | trim | length > 0
-          - connection_port | int > 0
-          - database | trim | length > 0
           - replicas | int > 0
           - workload | trim | length > 0
           - operation_count | int > 0
@@ -51,14 +44,14 @@
           - target | int >= 0
           - output_file | trim | length > 0
 
-    - name: Get IP address of server
-      shell: getent hosts {{ server }} | awk '{print $1}'
+    - name: Get IP address of {{ groups['server_hosts'][0] }}
+      shell: getent hosts {{ groups['server_hosts'][0] }} | awk '{print $1}'
       register: connection_addr
       delegate_to: manager
       changed_when: false
 
     - set_fact:
-        connection_addr: "{{ connection_addr.stdout }}:{{ connection_port }}"
+        connection_addr: "{{ connection_addr.stdout }}:{{ database.connection.port_no }}"
 
     - debug: var=create_command
 
