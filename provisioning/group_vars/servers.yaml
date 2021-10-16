@@ -1,3 +1,8 @@
 ---
 stack:
   name: database
+  label:
+    shard: lsse.project.server.shard
+    config: lsse.project.server.config
+    repl_set: lsse.project.server.replica_set
+    router: lsse.project.router
