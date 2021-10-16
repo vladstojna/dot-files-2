@@ -10,6 +10,7 @@
     --format {%raw%}'{{index .Config.Labels "com.docker.swarm.service.name"}}'{%endraw%}
     {{ container_id }}
   register: service_name_result
+  changed_when: false
 
 - name: Provision replica set
   delegate_to: "{{ container.hostname }}"
@@ -27,3 +28,6 @@
     rs.reconfig(cfg);
     rs.status()
     ' | mongosh"
+  register: provision_replset_result
+  changed_when:
+    - '"MongoServerError: already initialized" not in provision_replset_result.stdout'
