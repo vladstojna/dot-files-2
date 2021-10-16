@@ -1,0 +1,33 @@
+---
+- name: Delete {{ local_dest }} contents
+  file:
+    path: "{{ local_dest }}"
+    state: "{{ item }}"
+  loop:
+    - absent
+    - directory
+  delegate_to: "{{ delegate_host | default(omit) }}"
+
+- name: Copy result files from each container
+  shell: >
+    docker cp
+    {{ item }}:{{ container_path }}
+    {{ local_dest }}/results-{{ common_suffix }}.{{ index }}.json
+  loop: "{{ container_ids }}"
+  loop_control:
+    index_var: index
+  delegate_to: "{{ delegate_host | default(omit) }}"
+
+- name: Get list of files in {{ local_dest }}
+  shell: find {{ local_dest }} -maxdepth 1 -type f
+  register: file_list
+  changed_when: false
+  delegate_to: "{{ delegate_host | default(omit) }}"
+
+- name: Fetch files from {{ local_dest }} to controller's {{ controller_dest }}
+  fetch:
+    src: "{{ item }}"
+    dest: "{{ controller_dest }}/"
+    flat: yes
+  loop: "{{ file_list.stdout_lines }}"
+  delegate_to: "{{ delegate_host }}"
