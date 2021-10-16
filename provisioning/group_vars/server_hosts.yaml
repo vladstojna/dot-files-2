@@ -1,0 +1,11 @@
+---
+deployment:
+  compose_file: docker-compose.yaml
+  image: mongo:latest
+  network: mongo_net
+
+container:
+  name: my-mongo-server
+  image: mongo:latest
+  data_vol: my-mongo-data
+  config_vol: my-mongo-config
