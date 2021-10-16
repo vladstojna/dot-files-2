@@ -6,7 +6,12 @@
 
   tasks:
     - name: Get list of containers with label {{ stack.label.repl_set }}
-      shell: docker container ls --quiet --no-trunc --filter label={{ stack.label.repl_set }}
+      shell: >
+        docker container ls
+        --quiet
+        --no-trunc
+        --filter label={{ stack.label.repl_set }}
+        --filter label={{ stack.namespace }}
       delegate_to: "{{ item }}"
       run_once: true
       loop: "{{ groups['servers'] }}"
