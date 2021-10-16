@@ -22,6 +22,10 @@
 
     - debug: msg={{ stack_deploy_result.stdout_lines }}
 
+    - name: Wait for containers to start
+      pause:
+        seconds: 5
+
   handlers:
     - name: Cleanup artifacts
       include_tasks: tasks/server-sharded-cleanup.yaml
