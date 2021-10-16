@@ -1,4 +1,14 @@
 ---
+- name: Get sharding status
+  delegate_to: "{{ container.hostname }}"
+  loop: "{{ container.ids }}"
+  loop_control:
+    loop_var: container_id
+    label: "{{ container_id }}"
+  shell: docker exec {{ container_id }} mongosh --quiet --eval 'sh.status()'
+  register: sharding_status
+  changed_when: false
+
 - name: Add shards to router
   delegate_to: "{{ container.hostname }}"
   loop: "{{ container.ids | product(repl_set_svc_pair) | list }}"
@@ -6,18 +16,35 @@
     loop_var: cont_data_pair
     label: "{{ cont_data_pair }}"
   shell: >
-    docker exec {{ cont_data_pair.0 }}
-    bash -c "echo '
-    sh.addShard(\"{{ cont_data_pair.1 }}\");
-    sh.status()
-    ' | mongosh"
+    docker exec {{ cont_data_pair.0 }} mongosh
+    --quiet
+    --eval 'sh.addShard("{{ cont_data_pair.1 }}"); sh.status()'
   register: add_shards_result
+  changed_when:
+    - >
+      sharding_status.results |
+      selectattr('container_id', '==',  cont_data_pair.0) |
+      map(attribute='stdout') |
+      first
+      not in add_shards_result.stdout
 
-- debug: msg={{ add_shards_result.results[0].stdout_lines }}
+- debug:
+    msg: "{{ add_shards_result.results[0].stdout_lines }}"
+    verbosity: 3
 
 - name: Wait for router to stabilize
   pause:
     seconds: 5
+
+- name: Get sharding status (again)
+  delegate_to: "{{ container.hostname }}"
+  loop: "{{ container.ids }}"
+  loop_control:
+    loop_var: container_id
+    label: "{{ container_id }}"
+  shell: docker exec {{ container_id }} mongosh --quiet --eval 'sh.status()'
+  register: sharding_status
+  changed_when: false
 
 - name: Enable sharding for database {{ database.name }}
   delegate_to: "{{ container.hostname }}"
@@ -26,14 +53,21 @@
     loop_var: container_id
     label: "{{ container_id }}"
   shell: >
-    docker exec {{ container_id }}
-    bash -c "echo '
-    sh.enableSharding(\"{{ database.name }}\");
-    sh.status()
-    ' | mongosh"
+    docker exec {{ container_id }} mongosh
+    --quiet
+    --eval 'sh.enableSharding("{{ database.name }}"); sh.status()'
   register: enable_sharding_result
+  changed_when:
+    - >
+      sharding_status.results |
+      selectattr('container_id', '==',  container_id) |
+      map(attribute='stdout') |
+      first
+      not in enable_sharding_result.stdout
 
-- debug: msg={{ enable_sharding_result.results[0].stdout_lines }}
+- debug:
+    msg: "{{ enable_sharding_result.results[0].stdout_lines }}"
+    verbosity: 3
 
 - name: Enable sharding for collection {{ database.collection }}
   delegate_to: "{{ container.hostname }}"
@@ -42,11 +76,20 @@
     loop_var: container_id
     label: "{{ container_id }}"
   shell: >
-    docker exec {{ container_id }}
-    bash -c "echo '
-    sh.shardCollection(\"{{ database.name }}.{{ database.collection }}\", {\"_id\" : \"hashed\"});
-    sh.status()
-    ' | mongosh"
+    docker exec {{ container_id }} mongosh
+    --quiet
+    --eval '
+    sh.shardCollection("{{ database.name }}.{{ database.collection }}", {"_id" : "hashed"});
+    sh.status()'
   register: enable_sharding_col_result
+  changed_when:
+    - >
+      enable_sharding_result.results |
+      selectattr('container_id', '==',  container_id) |
+      map(attribute='stdout') |
+      first
+      not in enable_sharding_col_result.stdout
 
-- debug: msg={{ enable_sharding_col_result.results[0].stdout_lines }}
+- debug:
+    msg: "{{ enable_sharding_col_result.results[0].stdout_lines }}"
+    verbosity: 3
