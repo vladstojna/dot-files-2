@@ -1,0 +1,5 @@
+---
+- import_playbook: template/copy-files.yaml
+  vars:
+    pb_hosts: clients
+    pb_src: client/copy/

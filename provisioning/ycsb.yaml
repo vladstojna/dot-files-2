@@ -1,0 +1,6 @@
+---
+- import_playbook: template/docker-image-build.yaml
+  vars:
+    pb_hosts: clients
+    image: ycsb:latest
+    workdir: ycsb

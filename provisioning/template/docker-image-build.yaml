@@ -1,0 +1,33 @@
+---
+- hosts: "{{ pb_hosts }}"
+  remote_user: vagrant
+  gather_facts: no
+
+  vars:
+    extra_tr: "{{ extra | default('', true) | trim }}"
+    rebuild_tr: "{{ rebuild | default('', true) | trim }}"
+
+  tasks:
+    - debug: var=image
+    - debug: var=workdir
+    - debug: var=extra_tr
+    - debug: var=rebuild_tr
+
+    - name: Get existing docker images
+      command: docker images --format {%raw%}'{{.ID}}:{{.Repository}}:{{.Tag}}'{%endraw%}
+      register: docker_images_result
+      changed_when: >
+        (image not in docker_images_result.stdout)
+        or
+        (extra_tr | length > 0)
+        or
+        (rebuild_tr | length > 0)
+      notify: Build image
+
+    - debug: msg={{ docker_images_result.stdout_lines }}
+
+  handlers:
+    - name: Build image
+      command: docker build -t {{ image }} {{ extra_tr }} .
+      args:
+        chdir: "{{ workdir }}"
