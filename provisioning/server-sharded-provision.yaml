@@ -80,7 +80,7 @@
 
     - name: Wait for replica sets to stabilize
       pause:
-        seconds: 1
+        seconds: 3
 
     - name: Flush handlers
       meta: flush_handlers
