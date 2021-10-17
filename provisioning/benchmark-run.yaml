@@ -1,5 +1,5 @@
 ---
-- hosts: manager clients
+- hosts: clients
   remote_user: vagrant
   gather_facts: yes
 
@@ -42,6 +42,17 @@
           - batch_size | int > 0
           - threads | int > 0
           - target | int >= 0
+
+    - fail:
+        msg: "Variable 'gather_dest' is required to be defined and not empty"
+      when: not gather_dest | default('') | trim | length
+
+    - name: Ensure directory {{ gather_dest }} exists
+      file:
+        path: "{{ gather_dest }}"
+        state: directory
+        recurse: yes
+      delegate_to: manager
 
     - name: Get IP address of {{ groups['server_hosts'][0] }}
       shell: getent hosts {{ groups['server_hosts'][0] }} | awk '{print $1}'
@@ -153,9 +164,9 @@
         container_ids: "{{ result_item.value }}"
         delegate_host: "{{ result_item.key }}"
         local_dest: "{{ hostvars[delegate_host].results_dest }}"
-        controller_dest: "{{ hostvars.manager.results_dest }}"
+        controller_dest: "{{ gather_dest }}"
         container_path: "{{ output_file.container_path }}"
-        common_suffix: "{{ timestamp }}-\
+        common_prefix: "{{ timestamp }}-\
           {{ output_file.metadata | join('-') }}-\
           {{ delegate_host }}"
 

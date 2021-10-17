@@ -12,7 +12,7 @@
   shell: >
     docker cp
     {{ item }}:{{ container_path }}
-    {{ local_dest }}/results-{{ common_suffix }}.{{ index }}.json
+    {{ local_dest }}/{{ common_prefix }}.{{ index }}.json
   loop: "{{ container_ids }}"
   loop_control:
     index_var: index
@@ -30,4 +30,4 @@
     dest: "{{ controller_dest }}/"
     flat: yes
   loop: "{{ file_list.stdout_lines }}"
-  delegate_to: "{{ delegate_host }}"
+  delegate_to: "{{ delegate_host | default(omit) }}"
