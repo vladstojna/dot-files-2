@@ -5,13 +5,13 @@
   gather_facts: no
 
   tasks:
-    - name: Get list of containers with labels {{ stack.label.repl_set }} and {{ stack.namespace }}
+    - name: Get list of containers with label {{ stack.label.repl_set }} and stack {{ stack.name }}
       shell: >
         docker container ls
         --quiet
         --no-trunc
         --filter label={{ stack.label.repl_set }}
-        --filter label={{ stack.namespace }}
+        --filter label={{ stack.namespace }}={{ stack.name }}
       delegate_to: "{{ item }}"
       run_once: true
       loop: "{{ groups['servers'] }}"
@@ -32,12 +32,12 @@
     - name: Flush handlers
       meta: flush_handlers
 
-    - name: Get list of shard services in {{ stack.namespace }}
+    - name: Get list of shard services in {{ stack.name }}
       shell: >
         docker service ls
         --quiet
         --filter label={{ stack.label.shard }}
-        --filter label={{ stack.namespace }}
+        --filter label={{ stack.namespace }}={{ stack.name }}
       changed_when: false
       register: shard_services
 
@@ -55,13 +55,13 @@
 
     - debug: msg={{ replset_service_pair.results | map(attribute='stdout') }}
 
-    - name: Get list of containers with labels {{ stack.label.router }} and {{ stack.namespace }}
+    - name: Get list of containers with label {{ stack.label.router }} and stack {{ stack.name }}
       shell: >
         docker container ls
         --quiet
         --no-trunc
         --filter label={{ stack.label.router }}
-        --filter label={{ stack.namespace }}
+        --filter label={{ stack.namespace }}={{ stack.name }}
       delegate_to: "{{ item }}"
       run_once: true
       loop: "{{ groups['servers'] }}"

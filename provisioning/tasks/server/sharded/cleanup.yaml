@@ -6,7 +6,7 @@
     done
   changed_when: false
   vars:
-    ls_cmd: docker service ls --quiet --filter label=com.docker.stack.namespace={{ stack.name }}
+    ls_cmd: docker service ls --quiet --filter label={{ stack.namespace }}={{ stack.name }}
 
 - name: Wait until all networks are removed
   shell: |
@@ -15,7 +15,7 @@
     done
   changed_when: false
   vars:
-    ls_cmd: docker network ls --quiet --filter label=com.docker.stack.namespace={{ stack.name}}
+    ls_cmd: docker network ls --quiet --filter label={{ stack.namespace }}={{ stack.name}}
 
 - name: Wait...
   pause:

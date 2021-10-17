@@ -12,7 +12,7 @@
         --quiet
         --no-trunc
         --filter label={{ stack.label.router }}
-        --filter label={{ stack.namespace }}
+        --filter label={{ stack.namespace }}={{ stack.name }}
       register: container_ls
       changed_when: false
 

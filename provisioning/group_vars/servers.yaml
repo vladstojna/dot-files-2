@@ -1,7 +1,7 @@
 ---
 stack:
   name: database
-  namespace: com.docker.stack.namespace=database
+  namespace: com.docker.stack.namespace
   label:
     shard: lsse.project.server.shard
     config: lsse.project.server.config
