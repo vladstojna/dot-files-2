@@ -7,7 +7,7 @@
     remove_volumes: true
 
   tasks:
-    - import_tasks: tasks/server-single-exists.yaml
+    - import_tasks: tasks/server/single/exists.yaml
       notify:
         - Stop container
         - Remove volumes
