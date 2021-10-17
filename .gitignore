@@ -9,3 +9,8 @@ config.yaml
 
 # ansible
 provisioning/inventory.ini
+
+# vscode
+.vscode
+*.code-workspace
+.history/
