@@ -19,6 +19,7 @@
     operation_count: 100
     threads: 1
     target: 0
+    async_driver: false
 
     output_file:
       container_path: /results/run.json
@@ -29,6 +30,7 @@
         - "{{ batch_size }}b"
         - "{{ threads }}t"
         - "{{ (target == 0) | ternary('unthrottled', target ~ 'ops') }}"
+        - "{{ (async_driver | bool) | ternary('async', 'sync') }}"
 
   tasks:
     - name: Assert arguments
@@ -90,7 +92,9 @@
         --name {{ ycsb.service }}
         --label {{ ycsb.label }}
         --container-label {{ ycsb.label }}
-        {{ ycsb.image }} run mongodb -s
+        {{ ycsb.image }} run
+        {{ (async_driver | bool) | ternary('mongodb-async', 'mongodb') }}
+        -s
         -P workloads/{{ workload }}
         -p mongodb.url=mongodb://{{ connection_addr }}/{{ database.name }}?w=1
         -p mongodb.batchsize={{ batch_size }}
