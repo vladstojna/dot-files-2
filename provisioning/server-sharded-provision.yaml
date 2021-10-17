@@ -87,7 +87,7 @@
 
   handlers:
     - name: Provision replica sets
-      include_tasks: tasks/provision/replica-set.yaml
+      include_tasks: tasks/server/sharded/provision/replica-set.yaml
       when:
         - result_item.stdout_lines | length > 0
       loop: "{{ containers_repl_set.results }}"
@@ -100,7 +100,7 @@
           ids: "{{ result_item.stdout_lines }}"
 
     - name: Provision routers
-      include_tasks: tasks/provision/router.yaml
+      include_tasks: tasks/server/sharded/provision/router.yaml
       when:
         - result_item.stdout_lines | length > 0
       loop: "{{ containers_router.results }}"
