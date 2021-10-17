@@ -1,0 +1,22 @@
+---
+- name: Drop database
+  hosts: servers
+  remote_user: vagrant
+  gather_facts: no
+
+  tasks:
+    - name: Get latest container with label {{ stack.label.router }} and stack {{ stack.name }}
+      shell: >
+        docker container ls
+        --latest
+        --quiet
+        --no-trunc
+        --filter label={{ stack.label.router }}
+        --filter label={{ stack.namespace }}
+      register: container_ls
+      changed_when: false
+
+    - include_tasks: tasks/server/common/drop-db.yaml
+      when: container_ls.stdout | length > 0
+      vars:
+        container_id: "{{ container_ls.stdout }}"
