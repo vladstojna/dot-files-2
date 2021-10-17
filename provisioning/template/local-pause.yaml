@@ -1,0 +1,8 @@
+---
+- hosts: manager
+  remote_user: vagrant
+  gather_facts: no
+
+  tasks:
+    - pause:
+        seconds: "{{ duration | int }}"

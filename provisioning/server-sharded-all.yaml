@@ -1,0 +1,9 @@
+---
+- import_playbook: server-sharded-generate.yaml
+- import_playbook: server-sharded-deploy.yaml
+
+- import_playbook: template/local-pause.yaml
+  vars:
+    duration: 15
+
+- import_playbook: server-sharded-provision.yaml
