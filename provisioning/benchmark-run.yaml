@@ -58,6 +58,7 @@
       register: service_ls
 
     - debug: msg={{ service_ls.stdout_lines }}
+      when: service_ls.stdout_lines | length > 0
 
     - name: Remove service {{ ycsb.service }} if exists
       when: service_ls.stdout_lines | length > 0
@@ -69,6 +70,7 @@
       register: network_ls
 
     - debug: msg={{ network_ls.stdout_lines }}
+      when: network_ls.stdout_lines | length > 0
 
     - name: Remove network {{ ycsb.network }} if exists
       when: network_ls.stdout_lines | length > 0
