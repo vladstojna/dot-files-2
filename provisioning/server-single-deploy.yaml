@@ -18,6 +18,7 @@
       shell: >
         docker container run
         --rm
+        --cpus {{ resources.single.limit.cpu }}
         --name {{ container.name }}
         --mount type=volume,src={{ container.data_vol }},target=/data/db
         --mount type=volume,src={{ container.config_vol }},target=/data/configdb

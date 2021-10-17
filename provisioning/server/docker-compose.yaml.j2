@@ -32,6 +32,9 @@ services:
 {% for key, value in service.labels.items() %}
         {{ key }}: {{ value }}
 {% endfor %}
+      resources:
+        limits:
+          cpus: "{{ resources.shard.limit.cpu }}"
 {% endfor %}
 
   # Config server
@@ -62,6 +65,9 @@ services:
 {% for key, value in services.config_sv.labels.items() %}
         {{ key }}: {{ value }}
 {% endfor %}
+      resources:
+        limits:
+          cpus: "{{ resources.config.limit.cpu }}"
 
   # Routers
   {{ services.router.name }}:
@@ -89,6 +95,9 @@ services:
       replicas: {{ services.router.count }}
       labels:
         {{ services.router.label }}: {{ services.router.name }}
+      resources:
+        limits:
+          cpus: "{{ resources.router.limit.cpu }}"
 
 networks:
   {{ deployment.network }}:
