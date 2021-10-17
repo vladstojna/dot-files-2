@@ -144,7 +144,7 @@
 
     - name: Fetch result files from all clients to the controller
       when: container_ids | length > 0
-      include_tasks: tasks/client-fetch-results.yaml
+      include_tasks: tasks/client/fetch-results.yaml
       loop: "{{ container_ls | dict2items }}"
       loop_control:
         loop_var: result_item
@@ -159,7 +159,7 @@
           {{ output_file.metadata | join('-') }}-\
           {{ delegate_host }}"
 
-    - include_tasks: tasks/client-cleanup.yaml
+    - include_tasks: tasks/client/cleanup.yaml
       when: container_ids | length > 0
       loop: "{{ container_ls | dict2items }}"
       loop_control:
