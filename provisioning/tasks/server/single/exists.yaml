@@ -1,5 +1,5 @@
 ---
-- name: Check if container exists
+- name: Check if container {{ container.name }} exists
   shell: docker container ls --no-trunc --quiet --filter name=^/{{ container.name }}$
   register: container_id
   changed_when: false
