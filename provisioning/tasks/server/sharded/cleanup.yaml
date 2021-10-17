@@ -15,21 +15,34 @@
     done
   changed_when: false
   vars:
-    ls_cmd: docker network ls --quiet --filter label={{ stack.namespace }}={{ stack.name}}
+    ls_cmd: docker network ls --quiet --filter label={{ stack.namespace }}={{ stack.name }}
 
 - name: Wait...
   pause:
     seconds: 3
 
-- name: Remove unused volumes
-  command: docker volume prune --force
-  register: remove_volumes
+- name: Get list of volumes of stack
+  command: >
+    docker volume ls
+    --quiet
+    --filter label={{ stack.namespace }}={{ stack.name }}
+  register: volume_ls
+  changed_when: false
   run_once: true
   delegate_to: "{{ item }}"
   loop: "{{ groups['servers'] }}"
 
-- debug:
-    msg: "{{ item.stdout_lines }}"
-  loop: "{{ remove_volumes.results }}"
+- name: Remove volumes
+  command: docker volume rm {{ item.stdout_lines | join(' ') }}
+  run_once: true
+  delegate_to: "{{ item.item }}"
+  loop: "{{ volume_ls.results }}"
   loop_control:
-    label: "{{ item.cmd }}"
+    label: "{{ item.item }}"
+  when: item.stdout_lines | length
+
+- name: Removed volumes
+  debug:
+    msg: "{{ dict(volume_ls.results | map(attribute='item') | \
+      zip(volume_ls.results | map(attribute='stdout_lines'))) }}"
+  run_once: true
