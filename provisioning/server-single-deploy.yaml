@@ -8,11 +8,16 @@
 
   tasks:
     - import_tasks: tasks/server/single/exists.yaml
-      notify:
-        - Stop container
-        - Remove volumes
 
-    - meta: flush_handlers
+    - name: Stop container
+      when: container_id | length
+      shell: docker stop {{ container.name }}
+
+    - name: Remove volumes
+      shell: docker volume rm --force {{ container.data_vol }} {{ container.config_vol }}
+      when:
+        - container_id | length
+        - remove_volumes
 
     - name: Create container {{ container.name }}
       shell: >
@@ -25,11 +30,3 @@
         --publish {{ database.connection.port_no }}:27017
         --detach
         {{ container.image }}
-
-  handlers:
-    - name: Stop container
-      shell: docker stop {{ container.name }}
-
-    - name: Remove volumes
-      shell: docker volume rm --force {{ container.data_vol }} {{ container.config_vol }}
-      when: remove_volumes

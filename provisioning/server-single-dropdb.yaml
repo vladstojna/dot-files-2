@@ -6,13 +6,7 @@
 
   tasks:
     - import_tasks: tasks/server/single/exists.yaml
-      notify:
-        - Drop database
 
-    # Must to set this fact since both drop-db.yaml and exists.yaml use container_id
-    - set_fact:
-        container_id: "{{ container_id.stdout }}"
-
-  handlers:
     - name: Drop database
+      when: container_id | length
       include_tasks: tasks/server/common/drop-db.yaml
