@@ -9,7 +9,9 @@
     record_count: 10000
     threads: 4
     target: 0
-    output_file: /dev/null
+    wait_sync: true
+    show_output: false
+    drop_db: false
 
   tasks:
     - name: Assert arguments
@@ -20,30 +22,35 @@
           - record_count | int > 0
           - threads | int > 0
           - target | int >= 0
-          - output_file | trim | length > 0
 
-    - name: Get IP address of {{ groups['server_hosts'][0] }}
-      shell: getent hosts {{ groups['server_hosts'][0] }} | awk '{print $1}'
+    - name: Get IP address of {{ groups.server_hosts | first}}
+      shell: getent hosts {{ groups.server_hosts | first }} | awk '{print $1}'
       register: connection_addr
       delegate_to: manager
       changed_when: false
 
     - set_fact:
-        connection_addr: "{{ connection_addr.stdout }}:{{ database.connection.port_no }}"
+        connection_addr: "{{ connection_addr.stdout }}"
 
     - name: Run container
-      shell: >
+      shell: >-
         docker run
         --rm
-        {{ image }} load mongodb -s
+        {{ image }} load arangodb
+        -s
         -P workloads/{{ workload }}
-        -p mongodb.url=mongodb://{{ connection_addr }}/{{ database.name }}?w=1
-        -p recordcount={{ record_count }}
         -threads {{ threads }}
         -target {{ target }}
+        -p arangodb.ip={{ connection_addr }}
+        -p arangodb.port={{ database.connection.port_no }}
+        -p arangodb.waitForsync={{ wait_sync | ternary('true', 'false') }}
+        -p arangodb.dropDBBeforeRun={{ drop_db | ternary('true', 'false') }}
+        -p recordcount={{ record_count }}
         -p exporter=site.ycsb.measurements.exporter.JSONArrayMeasurementsExporter
-        -p exportfile={{ output_file }}
+        {{ show_output | ternary('', '-p exportfile=/dev/null') }}
       register: run_result
 
     - debug: msg="{{ run_result.cmd }}"
     - debug: msg="{{ run_result.stderr_lines }}"
+    - debug: msg="{{ run_result.stdout | from_json }}"
+      when: show_output
