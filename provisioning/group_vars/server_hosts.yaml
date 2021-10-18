@@ -7,8 +7,9 @@ deployment:
 container:
   name: my-arango-server
   image: arangodb:latest
-  data_vol: my-arango-data
-  apps_vol: my-arango-apps
+  volume:
+    data: my-arango-data
+    apps: my-arango-apps
 
 # Resources like CPU fraction
 # By default may use up to 100% of available processing time
