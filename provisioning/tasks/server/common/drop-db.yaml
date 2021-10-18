@@ -4,15 +4,14 @@
 
 - name: Drop database
   run_once: true
-  shell: >
-    docker exec {{ container_id }} mongosh
+  shell: >-
+    docker exec {{ container_id }} arangosh
     --quiet
-    --eval '
-      if (db.getMongo().getDBNames().includes("{{ database.name }}"))
-      {
-        db = db.getSiblingDB("{{ database.name }}");
-        db.dropDatabase();
-        db.dropDatabase()
+    --server.authentication false
+    --javascript.execute-string '
+      if (db._databases().includes("{{ database.name }}")) {
+        db._dropDatabase("{{ database.name }}");
+        print("dropped {{ database.name }}")
       }'
   register: drop_database
   changed_when: drop_database.stdout | length > 0
