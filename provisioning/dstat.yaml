@@ -1,0 +1,13 @@
+---
+- hosts: all
+  become: yes
+  become_method: sudo
+  remote_user: vagrant
+  gather_facts: no
+
+  tasks:
+    - name: ensure dstat is at the latest version
+      apt:
+        name: dstat
+        state: latest
+        update_cache: yes
