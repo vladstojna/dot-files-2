@@ -9,7 +9,7 @@
     wait_sync: false
 
   tasks:
-    - import_tasks: tasks/server/sharded/get-latest-coordinator.yaml
+    - import_tasks: tasks/server/cluster/get-latest-coordinator.yaml
 
     - include_tasks: tasks/server/common/drop-db.yaml
       when:
@@ -33,12 +33,12 @@
         shard_count: "{{ shard_count.stdout_lines | length | int }}"
       run_once: true
 
-    - include_tasks: tasks/server/sharded/provision/create-database.yaml
+    - include_tasks: tasks/server/cluster/provision/create-database.yaml
       when: container_ls | length
       vars:
         container_id: "{{ container_ls }}"
 
-    - include_tasks: tasks/server/sharded/provision/shard-collection.yaml
+    - include_tasks: tasks/server/cluster/provision/shard-collection.yaml
       when: container_ls | length
       vars:
         container_id: "{{ container_ls }}"

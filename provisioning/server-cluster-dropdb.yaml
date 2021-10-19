@@ -5,7 +5,7 @@
   gather_facts: no
 
   tasks:
-    - import_tasks: tasks/server/sharded/get-latest-coordinator.yaml
+    - import_tasks: tasks/server/cluster/get-latest-coordinator.yaml
 
     - include_tasks: tasks/server/common/drop-db.yaml
       when: container_ls | length

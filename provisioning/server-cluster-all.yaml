@@ -1,0 +1,9 @@
+---
+- import_playbook: server-cluster-generate.yaml
+- import_playbook: server-cluster-deploy.yaml
+
+- import_playbook: template/local-pause.yaml
+  vars:
+    duration: 15
+
+- import_playbook: server-cluster-shardcollection.yaml
