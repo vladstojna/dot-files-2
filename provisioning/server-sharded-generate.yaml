@@ -33,8 +33,7 @@
               },
               'labels': {
                 stack.label.dbserver: prefix ~ item
-              },
-              'endpoint': stack.name ~ '_' ~ prefix ~ item
+              }
             }]
           }}
       loop: "{{ range(1, dbserver_count | int + 1) | list }}"
@@ -49,7 +48,6 @@
             data: "{{ prefix }}_data"
             apps: "{{ prefix }}_apps"
           labels: "{{ labels_list | items2dict }}"
-          endpoint: "{{ stack.name ~ '_' ~ prefix }}"
       vars:
         prefix: arango_agency
         labels_list:
@@ -62,7 +60,6 @@
           name: "{{ name }}"
           count: "{{ coordinator_count | int }}"
           label: "{{ stack.label.coordinator }}"
-          endpoint: "{{ stack.name ~ '_' ~ name }}"
       vars:
         name: arango_coordinator
 
