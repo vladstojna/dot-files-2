@@ -5,13 +5,13 @@
   gather_facts: no
 
   tasks:
-    - name: Get latest container with label {{ stack.label.router }} and stack {{ stack.name }}
-      shell: >
+    - name: Get latest container with label {{ stack.label.coordinator }} and stack {{ stack.name }}
+      shell: >-
         docker container ls
         --latest
         --quiet
         --no-trunc
-        --filter label={{ stack.label.router }}
+        --filter label={{ stack.label.coordinator }}
         --filter label={{ stack.namespace }}={{ stack.name }}
       register: container_ls
       changed_when: false
