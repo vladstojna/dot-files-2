@@ -16,7 +16,7 @@
     - meta: flush_handlers
 
     - name: Deploy stack
-      command: >
+      command: >-
         docker stack deploy --compose-file {{ deployment.compose_file }} {{ stack.name }}
       register: stack_deploy_result
 

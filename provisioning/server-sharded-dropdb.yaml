@@ -5,18 +5,9 @@
   gather_facts: no
 
   tasks:
-    - name: Get latest container with label {{ stack.label.coordinator }} and stack {{ stack.name }}
-      shell: >-
-        docker container ls
-        --latest
-        --quiet
-        --no-trunc
-        --filter label={{ stack.label.coordinator }}
-        --filter label={{ stack.namespace }}={{ stack.name }}
-      register: container_ls
-      changed_when: false
+    - import_tasks: tasks/server/sharded/get-latest-coordinator.yaml
 
     - include_tasks: tasks/server/common/drop-db.yaml
-      when: container_ls.stdout | length > 0
+      when: container_ls | length
       vars:
-        container_id: "{{ container_ls.stdout }}"
+        container_id: "{{ container_ls }}"
