@@ -4,6 +4,6 @@
 
 - import_playbook: template/local-pause.yaml
   vars:
-    duration: 15
+    duration: 25
 
 - import_playbook: server-cluster-shardcollection.yaml
