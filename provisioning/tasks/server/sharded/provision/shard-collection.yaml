@@ -1,0 +1,32 @@
+---
+- debug:
+    var: properties
+  run_once: true
+
+- name: Create sharded collection {{ database.collection }} in database {{ database.name }}
+  run_once: true
+  command: >-
+    docker exec {{ container_id }} arangosh
+    --quiet
+    --server.authentication false
+    --javascript.execute-string '
+      db._useDatabase("{{ database.name }}");
+      db._create("{{ database.collection }}",
+      {
+        "waitForSync": {{ properties.wait_sync | bool | to_json }},
+        "numberOfShards": {{ properties.shard_count | int | to_json }},
+        "shardKeys": {{ shard_keys | to_json }},
+        "shardingStrategy": {{ sharding_strat | to_json }}
+      });
+      col = db._collection("{{ database.collection }}");
+      print(col.shards())'
+  register: shard_collection
+  vars:
+    shard_keys:
+      - _key
+    sharding_strat: hash
+
+- name: Shards created
+  run_once: true
+  debug:
+    msg: "{{ shard_collection.stdout }}"
