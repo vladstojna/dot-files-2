@@ -1,7 +1,7 @@
 ---
 deployment:
   compose_file: docker-compose.yaml
-  image: arangodb:latest
+  image: arangodb:3.5
   network: arango_net
 
 container:
@@ -14,13 +14,13 @@ container:
 # Resources like CPU fraction
 # By default may use up to 100% of available processing time
 resources:
-  shard:
+  dbserver:
     limit:
       cpu: 0
-  config:
+  agency:
     limit:
       cpu: 0
-  router:
+  coordinator:
     limit:
       cpu: 0
   single:
