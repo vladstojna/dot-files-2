@@ -4,8 +4,8 @@
   gather_facts: no
 
   vars:
-    shard_count: 2
-    router_count: 1
+    dbserver_count: 2
+    coordinator_count: 1
 
   tasks:
     - import_tasks: tasks/server/sharded/stack-assert.yaml
@@ -13,59 +13,64 @@
       assert:
         that:
           - database.connection.port_no | int > 0
-          - shard_count | int > 0
-          - router_count | int > 0
+          - dbserver_count | int > 0
+          - coordinator_count | int > 0
 
-    - name: Generate shard list
+    - name: Print deployment variables
+      debug:
+        var: deployment
+
+    - name: Generate database server list
       set_fact:
-        shard_list: >
+        dbservers: >
           {{
-            shard_list | default([]) +
+            dbservers | default([]) +
             [{
               'name': prefix ~ item,
-              'volume': prefix ~ item ~ '_data',
-              'config': prefix ~ item ~ '_config',
-              'repl_set': 'shard_set' ~ item,
+              'volume': {
+                'data': prefix ~ item ~ '_data',
+                'apps': prefix ~ item ~ '_apps'
+              },
               'labels': {
-                stack.label.shard: prefix ~ item,
-                stack.label.repl_set: 'shard_set' ~ item
-              }
+                stack.label.dbserver: prefix ~ item
+              },
+              'endpoint': stack.name ~ '_' ~ prefix ~ item
             }]
           }}
-      loop: "{{ range(1, shard_count | int + 1) | list }}"
+      loop: "{{ range(1, dbserver_count | int + 1) | list }}"
       vars:
-        prefix: mongo_shard
+        prefix: arango_db
 
-    - name: Generate config server
+    - name: Generate agency server
       set_fact:
-        config_sv:
+        agency:
           name: "{{ prefix }}"
-          volume: "{{ prefix }}_data"
-          config: "{{ prefix }}_config"
-          repl_set: "{{ replica_set }}"
+          volume:
+            data: "{{ prefix }}_data"
+            apps: "{{ prefix }}_apps"
           labels: "{{ labels_list | items2dict }}"
+          endpoint: "{{ stack.name ~ '_' ~ prefix }}"
       vars:
-        prefix: mongo_cfg
-        replica_set: config_set
+        prefix: arango_agency
         labels_list:
-          - key: "{{ stack.label.config }}"
+          - key: "{{ stack.label.agency }}"
             value: "{{ prefix }}"
-          - key: "{{ stack.label.repl_set }}"
-            value: "{{ replica_set }}"
 
-
-    - name: Generate router metadata
+    - name: Generate coordinator metadata
       set_fact:
-        router_metadata:
-          name: mongos
-          count: "{{ router_count | int }}"
-          label: "{{ stack.label.router }}"
+        coordinator:
+          name: "{{ name }}"
+          count: "{{ coordinator_count | int }}"
+          label: "{{ stack.label.coordinator }}"
+          endpoint: "{{ stack.name ~ '_' ~ name }}"
+      vars:
+        name: arango_coordinator
 
     - set_fact:
         services:
-          shards: "{{ shard_list }}"
-          config_sv: "{{ config_sv }}"
-          router: "{{ router_metadata }}"
+          dbservers: "{{ dbservers }}"
+          agency: "{{ agency }}"
+          coordinator: "{{ coordinator }}"
 
     - debug: var=services
 
