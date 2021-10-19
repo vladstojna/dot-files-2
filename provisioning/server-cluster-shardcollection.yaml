@@ -1,0 +1,47 @@
+---
+- name: Provision database servers
+  hosts: servers
+  remote_user: vagrant
+  gather_facts: no
+
+  vars:
+    drop_db: false
+    wait_sync: false
+
+  tasks:
+    - import_tasks: tasks/server/sharded/get-latest-coordinator.yaml
+
+    - include_tasks: tasks/server/common/drop-db.yaml
+      when:
+        - drop_db
+        - container_ls | length
+      vars:
+        container_id: "{{ container_ls }}"
+
+    - name: Get number of database servers in stack {{ stack.name }}
+      command: >-
+        docker service ls
+        --quiet
+        --filter label={{ stack.label.dbserver }}
+        --filter label={{ stack.namespace }}={{ stack.name }}
+      register: shard_count
+      delegate_to: "{{ groups.server_hosts | first }}"
+      run_once: true
+      changed_when: false
+
+    - set_fact:
+        shard_count: "{{ shard_count.stdout_lines | length | int }}"
+      run_once: true
+
+    - include_tasks: tasks/server/sharded/provision/create-database.yaml
+      when: container_ls | length
+      vars:
+        container_id: "{{ container_ls }}"
+
+    - include_tasks: tasks/server/sharded/provision/shard-collection.yaml
+      when: container_ls | length
+      vars:
+        container_id: "{{ container_ls }}"
+        properties:
+          wait_sync: "{{ wait_sync | bool }}"
+          shard_count: "{{ shard_count | int }}"
