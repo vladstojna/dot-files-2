@@ -3,77 +3,8 @@
   remote_user: vagrant
   gather_facts: no
 
-  vars:
-    dbserver_count: 2
-    coordinator_count: 1
-
   tasks:
-    - import_tasks: tasks/server/cluster/stack-assert.yaml
-    - name: Assert arguments
-      assert:
-        that:
-          - database.connection.port_no | int > 0
-          - dbserver_count | int > 0
-          - coordinator_count | int > 0
-
-    - name: Print deployment variables
-      debug:
-        var: deployment
-
-    - name: Generate database server list
-      set_fact:
-        dbservers: >
-          {{
-            dbservers | default([]) +
-            [{
-              'name': prefix ~ item,
-              'volume': {
-                'data': prefix ~ item ~ '_data',
-                'apps': prefix ~ item ~ '_apps'
-              },
-              'labels': {
-                stack.label.dbserver: prefix ~ item
-              }
-            }]
-          }}
-      loop: "{{ range(1, dbserver_count | int + 1) | list }}"
+    - import_tasks: tasks/server/cluster/generate-compose-file.yaml
       vars:
-        prefix: arango_db
-
-    - name: Generate agency server
-      set_fact:
-        agency:
-          name: "{{ prefix }}"
-          volume:
-            data: "{{ prefix }}_data"
-            apps: "{{ prefix }}_apps"
-          labels: "{{ labels_list | items2dict }}"
-      vars:
-        prefix: arango_agency
-        labels_list:
-          - key: "{{ stack.label.agency }}"
-            value: "{{ prefix }}"
-
-    - name: Generate coordinator metadata
-      set_fact:
-        coordinator:
-          name: "{{ name }}"
-          count: "{{ coordinator_count | int }}"
-          label: "{{ stack.label.coordinator }}"
-      vars:
-        name: arango_coordinator
-
-    - set_fact:
-        services:
-          dbservers: "{{ dbservers }}"
-          agency: "{{ agency }}"
-          coordinator: "{{ coordinator }}"
-
-    - debug: var=services
-
-    - name: Create templated {{ deployment.compose_file }}
-      template:
-        src: "{{ playbook_dir }}/server/{{ deployment.compose_file }}.j2"
-        dest: "{{ deployment.compose_file }}"
-        remote_src: no
-        force: yes
+        dbserver_count: 2
+        coordinator_count: 1
