@@ -24,11 +24,11 @@
     output_file:
       container_path: /results/run.json
       metadata:
-        - "{{ replicas }}r"
+        - "{{ replicas | int }}r"
         - "{{ workload }}"
-        - "{{ operation_count }}"
-        - "{{ threads }}t"
-        - "{{ (target == 0) | ternary('unthrottled', target ~ 'ops') }}"
+        - "{{ operation_count | int }}"
+        - "{{ threads | int }}t"
+        - "{{ (target | int == 0) | ternary('unthrottled', target ~ 'ops') }}"
         - "{{ (wait_sync | bool) | ternary('sync', 'nosync') }}"
         - "{{ (transaction_update | bool) | ternary('trup', 'notrup') }}"
 
@@ -74,46 +74,25 @@
       when: service_ls.stdout_lines | length > 0
       shell: docker service rm {{ service_ls.stdout_lines | join(' ') }}
 
-    - name: Get network {{ ycsb.network }} id
-      shell: docker network ls --no-trunc --quiet --filter name={{ ycsb.network }}
-      changed_when: false
-      register: network_ls
-
-    - debug: msg={{ network_ls.stdout_lines }}
-      when: network_ls.stdout_lines | length > 0
-
-    - name: Remove network {{ ycsb.network }} if exists
-      when: network_ls.stdout_lines | length > 0
-      shell: docker network rm {{ network_ls.stdout_lines | join(' ') }}
-
-    - name: Create network {{ ycsb.network }}
-      shell: >
-        docker network create
-        --driver overlay
-        --label {{ ycsb.label }}
-        {{ ycsb.network }}
-      register: create_network
-
     - name: Create service {{ ycsb.service }}
       shell: >
         docker service create
         --quiet
-        --network {{ ycsb.network }}
         --mode replicated-job
-        --replicas {{ replicas }}
+        --replicas {{ replicas | int }}
         --name {{ ycsb.service }}
         --label {{ ycsb.label }}
         --container-label {{ ycsb.label }}
         {{ ycsb.image }} run arangodb
         -s
         -P workloads/{{ workload }}
-        -threads {{ threads }}
-        -target {{ target }}
+        -threads {{ threads | int }}
+        -target {{ target | int }}
         -p arangodb.ip={{ connection_addr }}
-        -p arangodb.port={{ database.connection.port_no }}
-        -p arangodb.waitForsync={{ wait_sync | ternary('true', 'false') }}
-        -p arangodb.transactionUpdate={{ transaction_update | ternary('true', 'false') }}
-        -p operationcount={{ operation_count }}
+        -p arangodb.port={{ database.connection.port_no | int }}
+        -p arangodb.waitForsync={{ wait_sync | bool | ternary('true', 'false') }}
+        -p arangodb.transactionUpdate={{ transaction_update | bool | ternary('true', 'false') }}
+        -p operationcount={{ operation_count | int }}
         -p exporter=site.ycsb.measurements.exporter.JSONArrayMeasurementsExporter
         -p exportfile={{ output_file.container_path }}
       register: create_service
@@ -181,6 +160,3 @@
 
     - name: Remove service {{ create_service.stdout }}
       shell: docker service rm {{ create_service.stdout }}
-
-    - name: Remove network {{ create_network.stdout }}
-      shell: docker network rm {{ create_network.stdout }}

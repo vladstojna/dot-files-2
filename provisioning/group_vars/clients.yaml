@@ -1,6 +1,5 @@
 ---
 ycsb:
   image: ycsb:latest
-  network: ycsb-net
   service: ycsb-service
   label: lsse.project.client.ycsb_artifact
