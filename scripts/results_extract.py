@@ -61,10 +61,10 @@ def add_arguments(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     parser.add_argument(
         "--sep",
         action="store",
-        help="fieldname domain separator (default: @)",
+        help="fieldname domain separator (default: /)",
         required=False,
         type=str,
-        default="@",
+        default="/",
     )
     parser.add_argument(
         "--extra",
@@ -79,7 +79,7 @@ def add_arguments(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
 
 
 def metric2fieldname(m: Dict, sep: str) -> str:
-    return "{}{}{}".format(m["measurement"], sep, m["metric"])
+    return "{}{}{}".format(m["metric"], sep, m["measurement"])
 
 
 def assert_extra_fields(extra: Iterable[field_values], count: int) -> None:
