@@ -9,7 +9,7 @@
     record_count: 10000
     threads: 4
     target: 0
-    wait_sync: true
+    wait_sync: false
     show_output: false
     drop_db: false
 
