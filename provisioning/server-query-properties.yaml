@@ -1,0 +1,8 @@
+---
+- name: Query collection properties
+  hosts: servers
+  remote_user: vagrant
+  gather_facts: no
+
+  tasks:
+    - import_tasks: tasks/server/query-col-props.yaml
