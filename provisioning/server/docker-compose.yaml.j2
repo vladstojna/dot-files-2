@@ -45,7 +45,7 @@ services:
     command: >-
       --server.endpoint tcp://0.0.0.0:8529
       --cluster.my-address tcp://{{ service.name }}:8529
-      --cluster.my-role DBSERVER
+      --cluster.my-role PRIMARY
       --cluster.agency-endpoint tcp://{{ services.agency.name }}:8529
       --database.directory /var/lib/arangodb3
     environment:
