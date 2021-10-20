@@ -1,25 +1,26 @@
 ---
 deployment:
   compose_file: docker-compose.yaml
-  image: mongo:latest
-  network: mongo_net
+  image: arangodb:3.5
+  network: arango_net
 
 container:
-  name: my-mongo-server
-  image: mongo:latest
-  data_vol: my-mongo-data
-  config_vol: my-mongo-config
+  name: my-arango-server
+  image: arangodb:latest
+  volume:
+    data: my-arango-data
+    apps: my-arango-apps
 
 # Resources like CPU fraction
 # By default may use up to 100% of available processing time
 resources:
-  shard:
+  dbserver:
     limit:
       cpu: 0
-  config:
+  agency:
     limit:
       cpu: 0
-  router:
+  coordinator:
     limit:
       cpu: 0
   single:

@@ -13,11 +13,14 @@
       when: container_id | length
       shell: docker stop {{ container.name }}
 
+    - include_tasks: tasks/server/single/volumes-exist.yaml
+      when: remove_volumes
+
     - name: Remove volumes
-      shell: docker volume rm --force {{ container.data_vol }} {{ container.config_vol }}
+      shell: docker volume rm --force {{ volume_names | join(' ') }}
       when:
-        - container_id | length
         - remove_volumes
+        - volume_names | length
 
     - name: Create container {{ container.name }}
       shell: >
@@ -25,8 +28,9 @@
         --rm
         --cpus {{ resources.single.limit.cpu }}
         --name {{ container.name }}
-        --mount type=volume,src={{ container.data_vol }},target=/data/db
-        --mount type=volume,src={{ container.config_vol }},target=/data/configdb
-        --publish {{ database.connection.port_no }}:27017
+        --mount type=volume,source={{ container.volume.data }},target=/var/lib/arangodb3
+        --mount type=volume,source={{ container.volume.apps }},target=/var/lib/arangodb3-apps
+        --publish {{ database.connection.port_no }}:8529
         --detach
+        --env ARANGO_NO_AUTH=1
         {{ container.image }}

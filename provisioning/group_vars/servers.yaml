@@ -3,7 +3,6 @@ stack:
   name: database
   namespace: com.docker.stack.namespace
   label:
-    shard: lsse.project.server.shard
-    config: lsse.project.server.config
-    repl_set: lsse.project.server.replica_set
-    router: lsse.project.router
+    dbserver: lsse.project.server.arango.database
+    agency: lsse.project.server.arango.agency
+    coordinator: lsse.project.server.arango.coordinator

@@ -3,26 +3,62 @@
 version: "3"
 services:
 
-  # Shards
-{% for service in services.shards %}
+  # Agency
+  {{ services.agency.name }}:
+    container_name: {{ services.agency.name }}
+    image: {{ deployment.image }}
+    command: >-
+      --server.endpoint tcp://0.0.0.0:8529
+      --agency.my-address tcp://{{ services.agency.name }}:8529
+      --agency.endpoint tcp://{{ services.agency.name }}:8529
+      --agency.size 1
+      --agency.activate true
+      --agency.supervision true
+      --database.directory /var/lib/arangodb3
+    environment:
+      ARANGO_STORAGE_ENGINE: rocksdb
+      ARANGO_NO_AUTH: 1
+    networks:
+      - {{ deployment.network }}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - {{ services.agency.volume.data }}:/var/lib/arangodb3
+      - {{ services.agency.volume.apps }}:/var/lib/arangodb3-apps
+    labels:
+{% for key, value in services.agency.labels.items() %}
+      {{ key }}: {{ value }}
+{% endfor %}
+    deploy:
+      labels:
+{% for key, value in services.agency.labels.items() %}
+        {{ key }}: {{ value }}
+{% endfor %}
+      resources:
+        limits:
+          cpus: "{{ resources.agency.limit.cpu | default(0) }}"
+
+  # DB-Servers
+{% for service in services.dbservers %}
   {{ service.name }}:
     container_name: {{ service.name }}
     image: {{ deployment.image }}
-    command: >
-      mongod
-      --shardsvr
-      --replSet {{ service.repl_set }}
-      --noauth
-      --bind_ip_all
-      --port 27017
+    command: >-
+      --server.endpoint tcp://0.0.0.0:8529
+      --cluster.my-address tcp://{{ service.name }}:8529
+      --cluster.my-role PRIMARY
+      --cluster.agency-endpoint tcp://{{ services.agency.name }}:8529
+      --database.directory /var/lib/arangodb3
     environment:
-      TERM: xterm
+      ARANGO_STORAGE_ENGINE: rocksdb
+      ARANGO_NO_AUTH: 1
     networks:
       - {{ deployment.network }}
+    depends_on:
+      - {{ services.agency.name }}
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - {{ service.volume }}:/data/db
-      - {{ service.config }}:/data/configdb
+      - {{ service.volume.data }}:/var/lib/arangodb3
+      - {{ service.volume.apps }}:/var/lib/arangodb3-apps
     labels:
 {% for key, value in service.labels.items() %}
       {{ key }}: {{ value }}
@@ -34,79 +70,52 @@ services:
 {% endfor %}
       resources:
         limits:
-          cpus: "{{ resources.shard.limit.cpu }}"
+          cpus: "{{ resources.dbserver.limit.cpu | default(0) }}"
 {% endfor %}
 
-  # Config server
-  {{ services.config_sv.name }}:
-    container_name: {{ services.config_sv.name }}
-    image: {{ deployment.image }}
-    command: >
-      mongod
-      --configsvr
-      --replSet {{ services.config_sv.repl_set }}
-      --noauth
-      --bind_ip_all
-      --port 27017
-    environment:
-      TERM: xterm
-    networks:
-      - {{ deployment.network }}
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - {{ services.config_sv.volume }}:/data/db
-      - {{ services.config_sv.config }}:/data/configdb
-    labels:
-{% for key, value in services.config_sv.labels.items() %}
-      {{ key }}: {{ value }}
-{% endfor %}
-    deploy:
-      labels:
-{% for key, value in services.config_sv.labels.items() %}
-        {{ key }}: {{ value }}
-{% endfor %}
-      resources:
-        limits:
-          cpus: "{{ resources.config.limit.cpu }}"
-
-  # Routers
-  {{ services.router.name }}:
-    container_name: {{ services.router.name }}
+  # Coordinators
+  {{ services.coordinator.name }}:
+    container_name: {{ services.coordinator.name }}
     image: {{ deployment.image }}
     depends_on:
-      - {{ services.config_sv.name }}
-    command: >
-      mongos
-      --configdb
-      {{ services.config_sv.repl_set }}/{{ stack.name }}_{{services.config_sv.name }}:27017
-      --bind_ip_all
-      --port 27017
+      - {{ services.agency.name }}
+{% for service in services.dbservers %}
+      - {{ service.name }}
+{% endfor %}
+    command: >-
+      --server.endpoint tcp://0.0.0.0:8529
+      --cluster.my-address tcp://{{ services.coordinator.name }}:8529
+      --cluster.my-role COORDINATOR
+      --cluster.agency-endpoint tcp://{{ services.agency.name }}:8529
+{% if services.dbservers | length < 2 %}
+      --cluster.system-replication-factor {{ services.dbservers | length }}
+{% endif %}
     environment:
-      TERM: xterm
+      ARANGO_NO_AUTH: 1
     networks:
       - {{ deployment.network }}
     ports:
-      - {{ database.connection.port_no }}:27017
+      - {{ database.connection.port_no }}:8529
     volumes:
       - /etc/localtime:/etc/localtime:ro
     labels:
-      {{ services.router.label }}: {{ services.router.name }}
+      {{ services.coordinator.label }}: {{ services.coordinator.name }}
     deploy:
-      replicas: {{ services.router.count }}
+      replicas: {{ services.coordinator.count }}
       labels:
-        {{ services.router.label }}: {{ services.router.name }}
+        {{ services.coordinator.label }}: {{ services.coordinator.name }}
       resources:
         limits:
-          cpus: "{{ resources.router.limit.cpu }}"
+          cpus: "{{ resources.coordinator.limit.cpu | default(0) }}"
 
 networks:
   {{ deployment.network }}:
     driver: overlay
 
 volumes:
-  {{ services.config_sv.volume }}:
-  {{ services.config_sv.config }}:
-{% for service in services.shards %}
-  {{ service.volume }}:
-  {{ service.config }}:
+  {{ services.agency.volume.data }}:
+  {{ services.agency.volume.apps }}:
+{% for service in services.dbservers %}
+  {{ service.volume.data }}:
+  {{ service.volume.apps }}:
 {% endfor %}

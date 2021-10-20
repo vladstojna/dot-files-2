@@ -1,0 +1,21 @@
+---
+- name: Create database {{ database.name }}
+  run_once: true
+  command: >-
+    docker exec {{ container_id }} arangosh
+    --quiet
+    --server.authentication false
+    --javascript.execute-string '
+      db._createDatabase("{{ database.name }}");
+      db._useDatabase("{{ database.name }}");
+      print(db._name())
+    '
+  register: created_database
+
+- set_fact:
+    created_database: "{{ created_database.stdout }}"
+  run_once: true
+
+- debug:
+    msg: "Created database {{ created_database }}"
+  run_once: true

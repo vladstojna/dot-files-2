@@ -7,16 +7,16 @@
     cleanup: true
 
   tasks:
-    - import_tasks: tasks/server/sharded/stack-assert.yaml
+    - import_tasks: tasks/server/cluster/stack-assert.yaml
 
-    - import_tasks: tasks/server/sharded/remove-stack.yaml
+    - import_tasks: tasks/server/cluster/remove-stack.yaml
       when: cleanup
       notify: Cleanup artifacts
 
     - meta: flush_handlers
 
     - name: Deploy stack
-      command: >
+      command: >-
         docker stack deploy --compose-file {{ deployment.compose_file }} {{ stack.name }}
       register: stack_deploy_result
 
@@ -24,4 +24,4 @@
 
   handlers:
     - name: Cleanup artifacts
-      include_tasks: tasks/server/sharded/cleanup.yaml
+      include_tasks: tasks/server/cluster/cleanup.yaml

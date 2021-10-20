@@ -1,0 +1,14 @@
+---
+- hosts: server_hosts
+  remote_user: vagrant
+  gather_facts: no
+
+  tasks:
+    - import_tasks: tasks/server/cluster/stack-assert.yaml
+
+    - import_tasks: tasks/server/cluster/remove-stack.yaml
+      notify: Cleanup artifacts
+
+  handlers:
+    - name: Cleanup artifacts
+      include_tasks: tasks/server/cluster/cleanup.yaml
