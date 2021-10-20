@@ -1,0 +1,26 @@
+---
+- import_tasks: cluster/get-latest-coordinator.yaml
+
+- include_tasks: tasks/server/common/query-col-props.yaml
+  when: container_ls | length
+  vars:
+    container_id: "{{ container_ls }}"
+
+- name: No cluster running, falling back to single-server query
+  include_tasks: single/exists.yaml
+  when: collection_properties is not defined
+  run_once: true
+  vars:
+    delegate_host: "{{ groups.server_hosts | first }}"
+
+- fail:
+    msg: Container {{ container.name }} must exist
+  when:
+    - collection_properties is not defined
+    - not (container_id | length)
+
+- include_tasks: common/query-col-props.yaml
+  when: collection_properties is not defined
+  run_once: true
+  vars:
+    delegate_host: "{{ groups.server_hosts | first }}"

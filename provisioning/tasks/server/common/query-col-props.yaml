@@ -1,0 +1,22 @@
+---
+- name: Query properties of collection {{ database.collection }} in database {{ database.name }}
+  run_once: true
+  command: >-
+    docker exec {{ container_id }} arangosh
+    --quiet
+    --server.authentication false
+    --javascript.execute-string '
+      db._useDatabase("{{ database.name }}");
+      col = db._collection("{{ database.collection }}");
+      print(col.properties())
+    '
+  register: collection_properties
+  changed_when: false
+  delegate_to: "{{ delegate_host | default(omit) }}"
+
+- set_fact:
+    collection_properties: "{{ collection_properties.stdout | from_json }}"
+  run_once: true
+
+- debug: var=collection_properties
+  run_once: true
