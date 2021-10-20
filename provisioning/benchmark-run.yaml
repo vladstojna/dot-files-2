@@ -15,11 +15,11 @@
   vars:
     replicas: 1
     workload: workloadc
-    batch_size: 1
     operation_count: 100
     threads: 1
     target: 0
-    async_driver: false
+    wait_sync: false
+    transaction_update: false
 
     output_file:
       container_path: /results/run.json
@@ -27,10 +27,10 @@
         - "{{ replicas }}r"
         - "{{ workload }}"
         - "{{ operation_count }}"
-        - "{{ batch_size }}b"
         - "{{ threads }}t"
         - "{{ (target == 0) | ternary('unthrottled', target ~ 'ops') }}"
-        - "{{ (async_driver | bool) | ternary('async', 'sync') }}"
+        - "{{ (wait_sync | bool) | ternary('sync', 'nosync') }}"
+        - "{{ (transaction_update | bool) | ternary('trup', 'notrup') }}"
 
   tasks:
     - name: Assert arguments
@@ -39,7 +39,6 @@
           - replicas | int > 0
           - workload | trim | length > 0
           - operation_count | int > 0
-          - batch_size | int > 0
           - threads | int > 0
           - target | int >= 0
 
@@ -61,7 +60,7 @@
       changed_when: false
 
     - set_fact:
-        connection_addr: "{{ connection_addr.stdout }}:{{ database.connection.port_no }}"
+        connection_addr: "{{ connection_addr.stdout }}"
 
     - name: Get service {{ ycsb.service }} id
       shell: docker service ls --quiet --filter name={{ ycsb.service }}
@@ -105,15 +104,16 @@
         --name {{ ycsb.service }}
         --label {{ ycsb.label }}
         --container-label {{ ycsb.label }}
-        {{ ycsb.image }} run
-        {{ (async_driver | bool) | ternary('mongodb-async', 'mongodb') }}
+        {{ ycsb.image }} run arangodb
         -s
         -P workloads/{{ workload }}
-        -p mongodb.url=mongodb://{{ connection_addr }}/{{ database.name }}?w=1
-        -p mongodb.batchsize={{ batch_size }}
-        -p operationcount={{ operation_count }}
         -threads {{ threads }}
         -target {{ target }}
+        -p arangodb.ip={{ connection_addr }}
+        -p arangodb.port={{ database.connection.port_no }}
+        -p arangodb.waitForsync={{ wait_sync | ternary('true', 'false') }}
+        -p arangodb.transactionUpdate={{ transaction_update | ternary('true', 'false') }}
+        -p operationcount={{ operation_count }}
         -p exporter=site.ycsb.measurements.exporter.JSONArrayMeasurementsExporter
         -p exportfile={{ output_file.container_path }}
       register: create_service
