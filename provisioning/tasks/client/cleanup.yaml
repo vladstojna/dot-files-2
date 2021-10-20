@@ -1,0 +1,4 @@
+---
+- name: Remove containers
+  shell: docker container rm -v {{ container_ids | join(' ') }}
+  delegate_to: "{{ delegate_host | default(omit) }}"

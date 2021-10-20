@@ -1,0 +1,56 @@
+---
+- hosts: client_hosts
+  remote_user: vagrant
+  gather_facts: no
+
+  vars:
+    image: ycsb:latest
+    workload: workloada
+    record_count: 10000
+    threads: 4
+    target: 0
+    wait_sync: false
+    show_output: false
+    drop_db: false
+
+  tasks:
+    - name: Assert arguments
+      assert:
+        that:
+          - image | trim | length > 0
+          - workload | trim | length > 0
+          - record_count | int > 0
+          - threads | int > 0
+          - target | int >= 0
+
+    - name: Get IP address of {{ groups.server_hosts | first}}
+      shell: getent hosts {{ groups.server_hosts | first }} | awk '{print $1}'
+      register: connection_addr
+      delegate_to: manager
+      changed_when: false
+
+    - set_fact:
+        connection_addr: "{{ connection_addr.stdout }}"
+
+    - name: Run container
+      shell: >-
+        docker run
+        --rm
+        {{ image }} load arangodb
+        -s
+        -P workloads/{{ workload }}
+        -threads {{ threads }}
+        -target {{ target }}
+        -p arangodb.ip={{ connection_addr }}
+        -p arangodb.port={{ database.connection.port_no }}
+        -p arangodb.waitForsync={{ wait_sync | ternary('true', 'false') }}
+        -p arangodb.dropDBBeforeRun={{ drop_db | ternary('true', 'false') }}
+        -p recordcount={{ record_count }}
+        -p exporter=site.ycsb.measurements.exporter.JSONArrayMeasurementsExporter
+        {{ show_output | ternary('', '-p exportfile=/dev/null') }}
+      register: run_result
+
+    - debug: msg="{{ run_result.cmd }}"
+    - debug: msg="{{ run_result.stderr_lines }}"
+    - debug: msg="{{ run_result.stdout | from_json }}"
+      when: show_output
