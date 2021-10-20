@@ -1,3 +1,8 @@
 ---
 stack:
   name: database
+  namespace: com.docker.stack.namespace
+  label:
+    dbserver: lsse.project.server.arango.database
+    agency: lsse.project.server.arango.agency
+    coordinator: lsse.project.server.arango.coordinator

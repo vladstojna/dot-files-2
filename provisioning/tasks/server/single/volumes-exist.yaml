@@ -1,0 +1,13 @@
+---
+- name: Check if volumes {{ container.volume.values() | join(', ') }} exist
+  shell: >-
+    docker volume ls
+    --quiet
+    {% for vol in container.volume.values() %}
+    --filter name=^{{ vol }}$
+    {% endfor %}
+  register: volume_names
+  changed_when: false
+
+- set_fact:
+    volume_names: "{{ volume_names.stdout_lines }}"

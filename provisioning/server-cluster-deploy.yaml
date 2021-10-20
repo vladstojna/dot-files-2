@@ -1,0 +1,27 @@
+---
+- hosts: server_hosts
+  remote_user: vagrant
+  gather_facts: no
+
+  vars:
+    cleanup: true
+
+  tasks:
+    - import_tasks: tasks/server/cluster/stack-assert.yaml
+
+    - import_tasks: tasks/server/cluster/remove-stack.yaml
+      when: cleanup
+      notify: Cleanup artifacts
+
+    - meta: flush_handlers
+
+    - name: Deploy stack
+      command: >-
+        docker stack deploy --compose-file {{ deployment.compose_file }} {{ stack.name }}
+      register: stack_deploy_result
+
+    - debug: msg={{ stack_deploy_result.stdout_lines }}
+
+  handlers:
+    - name: Cleanup artifacts
+      include_tasks: tasks/server/cluster/cleanup.yaml

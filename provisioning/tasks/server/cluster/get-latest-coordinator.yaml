@@ -1,0 +1,14 @@
+---
+- name: Get latest container with label {{ stack.label.coordinator }} and stack {{ stack.name }}
+  command: >-
+    docker container ls
+    --latest
+    --quiet
+    --no-trunc
+    --filter label={{ stack.label.coordinator }}
+    --filter label={{ stack.namespace }}={{ stack.name }}
+  register: container_ls
+  changed_when: false
+
+- set_fact:
+    container_ls: "{{ container_ls.stdout }}"

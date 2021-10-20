@@ -1,0 +1,23 @@
+---
+- hosts: server_hosts
+  remote_user: vagrant
+  gather_facts: no
+
+  vars:
+    remove_volumes: true
+
+  tasks:
+    - import_tasks: tasks/server/single/exists.yaml
+
+    - name: Stop container
+      when: container_id | length
+      shell: docker stop {{ container.name }}
+
+    - include_tasks: tasks/server/single/volumes-exist.yaml
+      when: remove_volumes
+
+    - name: Remove volumes
+      shell: docker volume rm --force {{ volume_names | join(' ') }}
+      when:
+        - remove_volumes
+        - volume_names | length

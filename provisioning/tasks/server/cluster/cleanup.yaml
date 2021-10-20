@@ -1,0 +1,48 @@
+---
+- name: Wait until all services are removed
+  shell: |
+    until [ -z "$({{ ls_cmd }})" ]; do
+      sleep 1;
+    done
+  changed_when: false
+  vars:
+    ls_cmd: docker service ls --quiet --filter label={{ stack.namespace }}={{ stack.name }}
+
+- name: Wait until all networks are removed
+  shell: |
+    until [ -z "$({{ ls_cmd }})" ]; do
+      sleep 1;
+    done
+  changed_when: false
+  vars:
+    ls_cmd: docker network ls --quiet --filter label={{ stack.namespace }}={{ stack.name }}
+
+- name: Wait...
+  pause:
+    seconds: 3
+
+- name: Get list of volumes of stack
+  command: >
+    docker volume ls
+    --quiet
+    --filter label={{ stack.namespace }}={{ stack.name }}
+  register: volume_ls
+  changed_when: false
+  run_once: true
+  delegate_to: "{{ item }}"
+  loop: "{{ groups['servers'] }}"
+
+- name: Remove volumes
+  command: docker volume rm {{ item.stdout_lines | join(' ') }}
+  run_once: true
+  delegate_to: "{{ item.item }}"
+  loop: "{{ volume_ls.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: item.stdout_lines | length
+
+- name: Removed volumes
+  debug:
+    msg: "{{ dict(volume_ls.results | map(attribute='item') | \
+      zip(volume_ls.results | map(attribute='stdout_lines'))) }}"
+  run_once: true

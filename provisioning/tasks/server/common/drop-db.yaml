@@ -1,0 +1,24 @@
+---
+- debug: msg="Dropping database {{ database.name }}"
+  run_once: true
+
+- name: Drop database
+  run_once: true
+  shell: >-
+    docker exec {{ container_id }} arangosh
+    --quiet
+    --server.authentication false
+    --javascript.execute-string '
+      if (db._databases().includes("{{ database.name }}")) {
+        db._dropDatabase("{{ database.name }}");
+        print("dropped {{ database.name }}")
+      }'
+  register: drop_database
+  changed_when: drop_database.stdout | length > 0
+
+- debug:
+    msg:
+      - "Container ID: {{ container_id }}"
+      - "Status: {{ (drop_database.stdout | length > 0) | \
+        ternary(drop_database.stdout, 'Database ' ~ database.name ~ ' does not exist') }}"
+  run_once: true

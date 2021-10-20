@@ -1,0 +1,7 @@
+---
+- name: Remove stack {{ stack.name }} if exists
+  command: docker stack rm {{ stack.name }}
+  register: remove_stack_result
+  changed_when:
+    - remove_stack_result.rc == 0
+    - '"Nothing found in stack" not in remove_stack_result.stderr'

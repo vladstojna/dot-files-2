@@ -1,0 +1,13 @@
+---
+- name: Drop database
+  hosts: servers
+  remote_user: vagrant
+  gather_facts: no
+
+  tasks:
+    - import_tasks: tasks/server/cluster/get-latest-coordinator.yaml
+
+    - include_tasks: tasks/server/common/drop-db.yaml
+      when: container_ls | length
+      vars:
+        container_id: "{{ container_ls }}"

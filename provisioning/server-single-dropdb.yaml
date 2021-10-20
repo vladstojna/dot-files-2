@@ -1,0 +1,12 @@
+---
+- name: Drop database
+  hosts: server_hosts
+  remote_user: vagrant
+  gather_facts: no
+
+  tasks:
+    - import_tasks: tasks/server/single/exists.yaml
+
+    - name: Drop database
+      when: container_id | length
+      include_tasks: tasks/server/common/drop-db.yaml
