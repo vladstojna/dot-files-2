@@ -1,0 +1,6 @@
+---
+- import_playbook: server-cluster-generate.yaml
+
+- import_playbook: server-cluster-deploy.yaml
+  vars:
+    cleanup: false

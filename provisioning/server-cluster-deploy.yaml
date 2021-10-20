@@ -5,6 +5,7 @@
 
   vars:
     cleanup: true
+    force_regen: false
 
   tasks:
     - import_tasks: tasks/server/cluster/stack-assert.yaml
@@ -14,6 +15,21 @@
       notify: Cleanup artifacts
 
     - meta: flush_handlers
+
+    - name: Check if {{ deployment.compose_file }} exists
+      stat:
+        path: "{{ deployment.compose_file }}"
+      register: compose_file_stat
+
+    - fail:
+        msg: File {{ deployment.compose_file }} must be a regular file
+      when: compose_file_stat.stat.exists and not compose_file_stat.stat.isreg
+
+    - include_tasks: tasks/server/cluster/generate-compose-file.yaml
+      when: not compose_file_stat.stat.exists or force_regen
+      vars:
+        dbserver_count: 2
+        coordinator_count: 1
 
     - name: Deploy stack
       command: >-

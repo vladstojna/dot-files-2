@@ -1,0 +1,12 @@
+---
+- hosts: server_hosts
+  remote_user: vagrant
+  gather_facts: no
+
+  tasks:
+    - import_tasks: tasks/server/single/exists.yaml
+
+    - name: Update container {{ container.name }}
+      when: container_id | length
+      command: >-
+        docker container update --cpus {{ resources.single.limit.cpu }} {{ container.name }}
