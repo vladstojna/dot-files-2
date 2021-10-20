@@ -35,7 +35,7 @@ services:
 {% endfor %}
       resources:
         limits:
-          cpus: "{{ resources.agency.limit.cpu }}"
+          cpus: "{{ resources.agency.limit.cpu | default(0) }}"
 
   # DB-Servers
 {% for service in services.dbservers %}
@@ -70,7 +70,7 @@ services:
 {% endfor %}
       resources:
         limits:
-          cpus: "{{ resources.dbserver.limit.cpu }}"
+          cpus: "{{ resources.dbserver.limit.cpu | default(0) }}"
 {% endfor %}
 
   # Coordinators
@@ -106,7 +106,7 @@ services:
         {{ services.coordinator.label }}: {{ services.coordinator.name }}
       resources:
         limits:
-          cpus: "{{ resources.coordinator.limit.cpu }}"
+          cpus: "{{ resources.coordinator.limit.cpu | default(0) }}"
 
 networks:
   {{ deployment.network }}:
