@@ -4,7 +4,11 @@ import argparse
 import json
 import sys
 import csv
-from typing import Dict, Iterable, List, Union
+from typing import Any, Dict, Iterable, List, Union
+
+
+def log(*args: Any) -> None:
+    print("{}:".format(sys.argv[0]), *args, file=sys.stderr)
 
 
 def read_from(path):
@@ -84,18 +88,49 @@ def assert_extra_fields(extra: Iterable[field_values], count: int) -> None:
             raise ValueError("Extra fields must have exactly {} values".format(count))
 
 
+def find_metric(metrics: List, metric: str, measurement: str) -> Dict:
+    found = next(
+        filter(
+            lambda x: x["metric"] == metric and x["measurement"] == measurement, metrics
+        ),
+        None,
+    )
+    if found is None:
+        raise ValueError(
+            "Metric {} with measurement {} not found".format(metric, measurement)
+        )
+    return found
+
+
+def candidate(metric: Dict, count: int, quiet: bool = True) -> bool:
+    if len(metric["value"]) == count:
+        return True
+    if not quiet:
+        log("Leaving out metric", metric2fieldname(metric, " in "))
+    return False
+
+
 def main():
     parser = argparse.ArgumentParser(description="Reduce YCSB JSON values")
     args = add_arguments(parser).parse_args()
     with read_from(args.source_file) as sf:
         json_in = json.load(sf)
-        count = len(json_in[0]["value"])
+
+        # Overall runtime should always exist,
+        # get the default value count from it
+        overall_runtime = find_metric(json_in, "OVERALL", "RunTime(ms)")
+        count = len(overall_runtime["value"])
+
         assert_extra_fields(args.extra, count)
 
         fieldnames: List[str] = [
             "count",
             *(x.fieldname for x in args.extra),
-            *(metric2fieldname(m, args.sep) for m in json_in),
+            *(
+                metric2fieldname(m, args.sep)
+                for m in json_in
+                if candidate(m, count, quiet=False)
+            ),
         ]
         rows: List[List[Union[int, float]]] = []
 
@@ -104,7 +139,7 @@ def main():
                 [
                     x,
                     *(fv.values[x] for fv in args.extra),
-                    *(m["value"][x] for m in json_in),
+                    *(m["value"][x] for m in json_in if candidate(m, count)),
                 ]
             )
         with output_to(args.output) as of:
