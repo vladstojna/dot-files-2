@@ -144,7 +144,7 @@ $ ansible-playbook swarm-setup.yaml
 This will create one swarm for the server machines and
 another for the client machines.
 
-### Build YCSB docker image in the client VMs
+### Build [YCSB](https://github.com/brianfrankcooper/YCSB) docker image in the client VMs
 
 To prepare the client benchmark for execution we have to copy some files
 and build the docker image.
