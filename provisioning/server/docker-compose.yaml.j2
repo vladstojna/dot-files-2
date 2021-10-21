@@ -33,6 +33,11 @@ services:
 {% for key, value in services.agency.labels.items() %}
         {{ key }}: {{ value }}
 {% endfor %}
+{% if constrained_placement | default(true) | bool %}
+      placement:
+        constraints:
+          - node.labels.{{ node.label.key }} == {{ node.label.value.agency }}
+{% endif %}
       resources:
         limits:
           cpus: "{{ resources.agency.limit.cpu | default(0) }}"
@@ -68,6 +73,11 @@ services:
 {% for key, value in service.labels.items() %}
         {{ key }}: {{ value }}
 {% endfor %}
+{% if constrained_placement | default(true) | bool %}
+      placement:
+        constraints:
+          - node.labels.{{ node.label.key }} == {{ node.label.value.dbserver }}
+{% endif %}
       resources:
         limits:
           cpus: "{{ resources.dbserver.limit.cpu | default(0) }}"
@@ -104,6 +114,11 @@ services:
       replicas: {{ services.coordinator.count }}
       labels:
         {{ services.coordinator.label }}: {{ services.coordinator.name }}
+{% if constrained_placement | default(true) | bool %}
+      placement:
+        constraints:
+          - node.labels.{{ node.label.key }} == {{ node.label.value.coordinator }}
+{% endif %}
       resources:
         limits:
           cpus: "{{ resources.coordinator.limit.cpu | default(0) }}"
