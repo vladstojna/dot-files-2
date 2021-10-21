@@ -346,4 +346,35 @@ $ ansible-playbook benchmark-run.yaml -e replicas=2 -e workload=workloadc -e ope
 
 ### Examining the Results
 
-TODO
+When we [ran the benchmark](#running-the-benchmark), we gathered the results
+in `~/results` on the manager VM.
+This corresponds to the `results` directory on the host machine, which is a
+[synced folder](#repository-structure).
+
+On the host machine, change directory into `results` from the repository root.
+
+```shell
+cd results
+```
+
+Two JSON files have been generated here, one for each benchmark service replica.
+Example of some metrics:
+
+```json
+[ {
+  "metric" : "OVERALL",
+  "measurement" : "RunTime(ms)",
+  "value" : 13239
+}, {
+  "metric" : "OVERALL",
+  "measurement" : "Throughput(ops/sec)",
+  "value" : 7553.440592189742
+}, {
+...
+}, {
+  "metric" : "READ",
+  "measurement" : "95thPercentileLatency(us)",
+  "value" : 689
+}, {
+...
+```
