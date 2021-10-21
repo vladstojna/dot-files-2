@@ -39,15 +39,15 @@
         {{ image }} load arangodb
         -s
         -P workloads/{{ workload }}
-        -threads {{ threads }}
-        -target {{ target }}
+        -threads {{ threads | int }}
+        -target {{ target | int }}
         -p arangodb.ip={{ connection_addr }}
-        -p arangodb.port={{ database.connection.port_no }}
-        -p arangodb.waitForsync={{ wait_sync | ternary('true', 'false') }}
-        -p arangodb.dropDBBeforeRun={{ drop_db | ternary('true', 'false') }}
-        -p recordcount={{ record_count }}
+        -p arangodb.port={{ database.connection.port_no | int }}
+        -p arangodb.waitForsync={{ wait_sync | bool | ternary('true', 'false') }}
+        -p arangodb.dropDBBeforeRun={{ drop_db | bool | ternary('true', 'false') }}
+        -p recordcount={{ record_count | int }}
         -p exporter=site.ycsb.measurements.exporter.JSONArrayMeasurementsExporter
-        {{ show_output | ternary('', '-p exportfile=/dev/null') }}
+        {{ show_output | bool | ternary('', '-p exportfile=/dev/null') }}
       register: run_result
 
     - debug: msg="{{ run_result.cmd }}"
