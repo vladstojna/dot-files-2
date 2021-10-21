@@ -1,0 +1,114 @@
+---
+- name: Add or update node labels
+  hosts: server_hosts
+  remote_user: vagrant
+  gather_facts: false
+
+  vars:
+    count:
+      coordinator: 1
+      agency: 1
+      dbserver: auto
+
+  tasks:
+    - name: Assert arguments
+      assert:
+        that:
+          - count.coordinator | int > 0
+          - count.agency | int > 0
+          - (count.dbserver | int > 0) or (count.dbserver == 'auto')
+
+    - name: Get list of node hostnames
+      command: docker node ls --format {%raw%}{{.Hostname}}{%endraw%}
+      register: node_ls
+      changed_when: false
+    - set_fact:
+        node_ls: "{{ node_ls.stdout_lines }}"
+
+    - debug: var=node_ls
+
+    - fail:
+        msg: >-
+          At least {{ total | int }} nodes are required,
+          found {{ node_ls | length }}
+      when: node_ls | length < total | int
+      vars:
+        total: >-
+          {{ count.coordinator | int +
+          count.agency | int +
+          (count.dbserver == 'auto') | ternary(1, count.dbserver | int) }}
+
+    - name: Get list of node IDs mapped to each label
+      command: >-
+        docker node inspect {{ item }}
+        --format {%raw%}'{{json .Spec.Labels}}'{%endraw%}
+      loop: "{{ node_ls }}"
+      register: node_labels
+      changed_when: false
+
+    - debug:
+        msg: >-
+          {{ node_labels.results |
+          map(attribute='stdout') |
+          map('from_json') |
+          map('list') |
+          map('select', 'in', node.label.values()) }}
+
+    - set_fact:
+        node_labels: "{{ dict(key_list | zip(value_list)) }}"
+      vars:
+        key_list: "{{ node_labels.results | map(attribute='item') }}"
+        value_list: >-
+          {{ node_labels.results |
+          map(attribute='stdout') |
+          map('from_json') |
+          map('list') |
+          map('select', 'in', node.label.values()) }}
+
+    - debug: var=node_labels
+
+    - name: Remove labels if they exist
+      when: item.value | length
+      command: >-
+        docker node update {{ item.key }}
+        {% for label in item.value %}
+        --label-rm {{ label }}
+        {% endfor %}
+      loop: "{{ node_labels | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
+
+    - name: Add labels
+      when: idx < end.dbserver | int
+      command: >-
+        docker node update {{ item }}
+        {% if start.coordinator | int <= idx < end.coordinator | int %}
+        --label-add {{ node.label.coordinator }}
+        {% elif start.agency | int <= idx < end.agency | int %}
+        --label-add {{ node.label.agency }}
+        {% elif start.dbserver | int <= idx < end.dbserver | int %}
+        --label-add {{ node.label.dbserver }}
+        {% endif %}
+      register: add_labels
+      loop: "{{ node_ls | sort }}"
+      loop_control:
+        index_var: idx
+      vars:
+        dbserver_count: >-
+          {{ (count.dbserver == 'auto') |
+          ternary(node_ls | length -
+            count.coordinator | int -
+            count.agency | int,
+          count.dbserver | int) }}
+        start:
+          coordinator: 0
+          agency: "{{ count.coordinator | int }}"
+          dbserver: "{{ count.coordinator | int + count.agency | int }}"
+        end:
+          coordinator: "{{ start.coordinator | int + count.coordinator | int }}"
+          agency: "{{ start.agency | int + count.agency | int }}"
+          dbserver: "{{ start.dbserver | int + dbserver_count | int }}"
+
+    - debug:
+        msg: >-
+          {{ add_labels.results | map(attribute='cmd') | map('join', ' ') }}
