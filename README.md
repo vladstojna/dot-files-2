@@ -1,5 +1,10 @@
 # Large Scale Systems Engineering - Project
 
+## System
+
+The system chosen for evaluation is [ArangoDB](https://www.arangodb.com/),
+a [multi-model database system](https://en.wikipedia.org/wiki/ArangoDB).
+
 ## Repository Structure
 
 Relevant items
