@@ -41,39 +41,23 @@
     - name: Get list of node IDs mapped to each label
       command: >-
         docker node inspect {{ item }}
-        --format {%raw%}'{{json .Spec.Labels}}'{%endraw%}
+        --format '{{ '{{index .Spec.Labels "' ~ node.label.key  ~ '"}}' }}'
       loop: "{{ node_ls }}"
       register: node_labels
       changed_when: false
-
-    - debug:
-        msg: >-
-          {{ node_labels.results |
-          map(attribute='stdout') |
-          map('from_json') |
-          map('list') |
-          map('select', 'in', node.label.values()) }}
 
     - set_fact:
         node_labels: "{{ dict(key_list | zip(value_list)) }}"
       vars:
         key_list: "{{ node_labels.results | map(attribute='item') }}"
-        value_list: >-
-          {{ node_labels.results |
-          map(attribute='stdout') |
-          map('from_json') |
-          map('list') |
-          map('select', 'in', node.label.values()) }}
+        value_list: "{{ node_labels.results | map(attribute='stdout') }}"
 
     - debug: var=node_labels
 
     - name: Remove labels if they exist
       when: item.value | length
       command: >-
-        docker node update {{ item.key }}
-        {% for label in item.value %}
-        --label-rm {{ label }}
-        {% endfor %}
+        docker node update {{ item.key }} --label-rm {{ node.label.key }}
       loop: "{{ node_labels | dict2items }}"
       loop_control:
         label: "{{ item.key }}"
@@ -83,11 +67,11 @@
       command: >-
         docker node update {{ item }}
         {% if start.coordinator | int <= idx < end.coordinator | int %}
-        --label-add {{ node.label.coordinator }}
+        --label-add {{ node.label.key }}={{ node.label.value.coordinator }}
         {% elif start.agency | int <= idx < end.agency | int %}
-        --label-add {{ node.label.agency }}
+        --label-add {{ node.label.key }}={{ node.label.value.agency }}
         {% elif start.dbserver | int <= idx < end.dbserver | int %}
-        --label-add {{ node.label.dbserver }}
+        --label-add {{ node.label.key }}={{ node.label.value.dbserver }}
         {% endif %}
       register: add_labels
       loop: "{{ node_ls | sort }}"

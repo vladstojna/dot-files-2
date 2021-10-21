@@ -29,6 +29,8 @@ resources:
 
 node:
   label:
-    dbserver: lsse.project.node.dbserver
-    agency: lsse.project.node.agency
-    coordinator: lsse.project.node.coordinator
+    key: lsse.project.node.role
+    value:
+      dbserver: dbserver
+      agency: agency
+      coordinator: coordinator
