@@ -20,6 +20,12 @@ There is a `README.md` in `provisioning` describing its contents.
 
 Before running anything, we have to set the environment up.
 
+Requirements:
+
+* Vagrant version 2 or later
+* VirtualBox version 6 or later
+* OpenSSH
+
 ### Key Generation
 
 Initially, we need to generate an SSH key
