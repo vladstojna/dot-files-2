@@ -1,0 +1,14 @@
+---
+- name: Query collection properties
+  hosts: server_hosts
+  remote_user: vagrant
+  gather_facts: no
+
+  tasks:
+    - import_tasks: tasks/server/single/exists.yaml
+
+    - fail:
+        msg: Container {{ container.name }} must exist
+      when: not (container_id | length)
+
+    - include_tasks: tasks/server/common/query-col-props.yaml
