@@ -19,7 +19,7 @@ Relevant items
   are used to provision the VMs or execute on the host to post-process
   the results and more
 
-There is a `README.md` in `provisioning` describing its contents.
+**TODO** There is a `README.md` in `provisioning` describing its contents.
 
 ## Instructions
 
