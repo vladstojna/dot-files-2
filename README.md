@@ -363,23 +363,28 @@ cd results
 ```
 
 Two JSON files have been generated here, one for each benchmark service replica.
-Example of some metrics:
+Examples of some metrics:
 
 ```json
-[ {
+{
   "metric" : "OVERALL",
   "measurement" : "RunTime(ms)",
   "value" : 13239
-}, {
+}
+```
+
+```json
+{
   "metric" : "OVERALL",
   "measurement" : "Throughput(ops/sec)",
   "value" : 7553.440592189742
-}, {
-...
-}, {
+}
+```
+
+```json
+{
   "metric" : "READ",
   "measurement" : "95thPercentileLatency(us)",
   "value" : 689
-}, {
-...
+}
 ```
