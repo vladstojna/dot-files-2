@@ -165,9 +165,101 @@ It is possible to run the database server as:
 
 #### **Single**
 
-TODO
+Deploy a single server:
+
+```shell
+$ ansible-playbook server-single-deploy.yaml
+...
+```
+
+This will create a container running ArangoDB inside the VM `replica1`.
+To destroy the deployed server after running the benchmark, execute:
+
+```shell
+$ ansible-playbook server-single-destroy.yaml -e remove_volumes=yes
+...
+```
 
 #### **Cluster**
+
+ArangoDB has an [extensive documentation](https://www.arangodb.com/docs/stable/architecture-deployment-modes-cluster.html) regarding its cluster deployment.
+The [cluster architecture](https://www.arangodb.com/docs/stable/architecture-deployment-modes-cluster-architecture.html) consists
+of instances with three distinct roles:
+
+* Agents
+* Coordinators
+* DB-Servers
+
+We will be deploying a [sharded cluster](https://www.arangodb.com/docs/stable/architecture-deployment-modes-cluster-sharding.html) in this example.
+Seeing as have 4 VMs deployed, we will be running one Coordinator on `replica1`,
+one Agent on `replica2` and two DB-Servers on `replica3` and `replica4`.
+
+First, let's label the swarm nodes for Docker to know on which to deploy each service:
+
+```shell
+$ ansible-playbook node-update-labels.yaml
+...
+```
+
+Next, let's generate the docker compose file:
+
+```shell
+$ ansible-playbook server-cluster-generate.yaml -e constrained_placement=yes
+...
+```
+
+Confirm that a file named `docker-compose.yaml` exists on `replica1`
+
+```shell
+$ ansible replica1 -a 'ls -l'
+replica1 | CHANGED | rc=0 >>
+total 4
+-rw-rw-r-- 1 vagrant vagrant 3863 Oct 21 22:17 docker-compose.yaml
+```
+
+Now, deploy the stack. There is no need to clean up previous deployments
+because this is the first time we are deploying.
+
+```shell
+$ ansible-playbook server-cluster-deploy.yaml -e cleanup=no
+...
+ok: [replica1] => {
+    "msg": [
+        "Creating network database_arango_net",
+        "Creating service database_arango_db1",
+        "Creating service database_arango_db2",
+        "Creating service database_arango_coordinator",
+        "Creating service database_arango_agency"
+    ]
+}
+...
+```
+
+After the stack is deployed, wait around 30 seconds to allow the servers to
+stabilize. You can also check the service logs with:
+
+```shell
+ansible replica1 -a 'docker service logs <service name>' | less
+```
+
+Finally, create a sharded collection.
+We will control the synchronization to disk when running the benchmark and
+that is why we pass `wait_sync=no`:
+
+```shell
+$ ansible-playbook server-cluster-shardcollection.yaml -e wait_sync=no
+...
+TASK [Shards created]
+ok: [replica1] => {
+    "msg": [
+        "s10163",
+        "s10164"
+    ]
+}
+...
+```
+
+To query the properties of a collection, run:
 
 TODO
 
