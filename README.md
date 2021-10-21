@@ -265,9 +265,34 @@ ok: [replica1] => {
 ...
 ```
 
-To query the properties of a collection, run:
+To query the properties of a collection, execute:
 
-TODO
+```shell
+$ ansible-playbook server-cluster-query-properties.yaml
+...
+ok: [replica1] => {
+    "collection_properties": {
+        "cacheEnabled": false,
+        "isSmart": false,
+        "isSystem": false,
+        "keyOptions": {
+            "allowUserKeys": true,
+            "type": "traditional"
+        },
+        "minReplicationFactor": 1,
+        "numberOfShards": 2,
+        "replicationFactor": 1,
+        "shardKeys": [
+            "_key"
+        ],
+        "shardingStrategy": "hash",
+        "waitForSync": false
+    }
+}
+...
+```
+
+As expected, `numberOfShards` is `2` and `waitForSync` is `false`.
 
 ### Running the benchmark
 
