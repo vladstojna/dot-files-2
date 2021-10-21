@@ -210,7 +210,7 @@ $ ansible-playbook node-update-labels.yaml
 Next, let's generate the docker compose file:
 
 ```shell
-$ ansible-playbook server-cluster-generate.yaml -e constrained_placement=yes
+$ ansible-playbook server-cluster-generate.yaml -e constrained_placement=yes -e dbserver_count=2 -e coordinator_count=1
 ...
 ```
 
