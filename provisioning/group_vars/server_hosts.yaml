@@ -26,3 +26,9 @@ resources:
   single:
     limit:
       cpu: 0
+
+node:
+  label:
+    dbserver: lsse.project.node.dbserver
+    agency: lsse.project.node.agency
+    coordinator: lsse.project.node.coordinator
