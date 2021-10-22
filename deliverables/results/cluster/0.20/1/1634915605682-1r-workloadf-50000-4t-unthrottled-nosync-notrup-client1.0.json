@@ -1,0 +1,177 @@
+[ {
+  "metric" : "OVERALL",
+  "measurement" : "RunTime(ms)",
+  "value" : 78696
+}, {
+  "metric" : "OVERALL",
+  "measurement" : "Throughput(ops/sec)",
+  "value" : 635.3563078174241
+}, {
+  "metric" : "TOTAL_GCS_PS_Scavenge",
+  "measurement" : "Count",
+  "value" : 280
+}, {
+  "metric" : "TOTAL_GC_TIME_PS_Scavenge",
+  "measurement" : "Time(ms)",
+  "value" : 180
+}, {
+  "metric" : "TOTAL_GC_TIME_%_PS_Scavenge",
+  "measurement" : "Time(%)",
+  "value" : 0.22872827081427266
+}, {
+  "metric" : "TOTAL_GCS_PS_MarkSweep",
+  "measurement" : "Count",
+  "value" : 0
+}, {
+  "metric" : "TOTAL_GC_TIME_PS_MarkSweep",
+  "measurement" : "Time(ms)",
+  "value" : 0
+}, {
+  "metric" : "TOTAL_GC_TIME_%_PS_MarkSweep",
+  "measurement" : "Time(%)",
+  "value" : 0.0
+}, {
+  "metric" : "TOTAL_GCs",
+  "measurement" : "Count",
+  "value" : 280
+}, {
+  "metric" : "TOTAL_GC_TIME",
+  "measurement" : "Time(ms)",
+  "value" : 180
+}, {
+  "metric" : "TOTAL_GC_TIME_%",
+  "measurement" : "Time(%)",
+  "value" : 0.22872827081427266
+}, {
+  "metric" : "READ",
+  "measurement" : "Operations",
+  "value" : 50000
+}, {
+  "metric" : "READ",
+  "measurement" : "AverageLatency(us)",
+  "value" : 4027.1939
+}, {
+  "metric" : "READ",
+  "measurement" : "MinLatency(us)",
+  "value" : 653
+}, {
+  "metric" : "READ",
+  "measurement" : "MaxLatency(us)",
+  "value" : 143999
+}, {
+  "metric" : "READ",
+  "measurement" : "95thPercentileLatency(us)",
+  "value" : 3011
+}, {
+  "metric" : "READ",
+  "measurement" : "99thPercentileLatency(us)",
+  "value" : 60255
+}, {
+  "metric" : "READ",
+  "measurement" : "Return=OK",
+  "value" : 50000
+}, {
+  "metric" : "UPDATE-FAILED",
+  "measurement" : "Operations",
+  "value" : 6
+}, {
+  "metric" : "UPDATE-FAILED",
+  "measurement" : "AverageLatency(us)",
+  "value" : 2502.1666666666665
+}, {
+  "metric" : "UPDATE-FAILED",
+  "measurement" : "MinLatency(us)",
+  "value" : 1377
+}, {
+  "metric" : "UPDATE-FAILED",
+  "measurement" : "MaxLatency(us)",
+  "value" : 3923
+}, {
+  "metric" : "UPDATE-FAILED",
+  "measurement" : "95thPercentileLatency(us)",
+  "value" : 3923
+}, {
+  "metric" : "UPDATE-FAILED",
+  "measurement" : "99thPercentileLatency(us)",
+  "value" : 3923
+}, {
+  "metric" : "READ-MODIFY-WRITE",
+  "measurement" : "Operations",
+  "value" : 24979
+}, {
+  "metric" : "READ-MODIFY-WRITE",
+  "measurement" : "AverageLatency(us)",
+  "value" : 8453.997838184074
+}, {
+  "metric" : "READ-MODIFY-WRITE",
+  "measurement" : "MinLatency(us)",
+  "value" : 1413
+}, {
+  "metric" : "READ-MODIFY-WRITE",
+  "measurement" : "MaxLatency(us)",
+  "value" : 145919
+}, {
+  "metric" : "READ-MODIFY-WRITE",
+  "measurement" : "95thPercentileLatency(us)",
+  "value" : 60415
+}, {
+  "metric" : "READ-MODIFY-WRITE",
+  "measurement" : "99thPercentileLatency(us)",
+  "value" : 63743
+}, {
+  "metric" : "CLEANUP",
+  "measurement" : "Operations",
+  "value" : 4
+}, {
+  "metric" : "CLEANUP",
+  "measurement" : "AverageLatency(us)",
+  "value" : 88.25
+}, {
+  "metric" : "CLEANUP",
+  "measurement" : "MinLatency(us)",
+  "value" : 2
+}, {
+  "metric" : "CLEANUP",
+  "measurement" : "MaxLatency(us)",
+  "value" : 342
+}, {
+  "metric" : "CLEANUP",
+  "measurement" : "95thPercentileLatency(us)",
+  "value" : 342
+}, {
+  "metric" : "CLEANUP",
+  "measurement" : "99thPercentileLatency(us)",
+  "value" : 342
+}, {
+  "metric" : "UPDATE",
+  "measurement" : "Operations",
+  "value" : 24973
+}, {
+  "metric" : "UPDATE",
+  "measurement" : "AverageLatency(us)",
+  "value" : 4467.085852720938
+}, {
+  "metric" : "UPDATE",
+  "measurement" : "MinLatency(us)",
+  "value" : 741
+}, {
+  "metric" : "UPDATE",
+  "measurement" : "MaxLatency(us)",
+  "value" : 141567
+}, {
+  "metric" : "UPDATE",
+  "measurement" : "95thPercentileLatency(us)",
+  "value" : 3799
+}, {
+  "metric" : "UPDATE",
+  "measurement" : "99thPercentileLatency(us)",
+  "value" : 60639
+}, {
+  "metric" : "UPDATE",
+  "measurement" : "Return=OK",
+  "value" : 24973
+}, {
+  "metric" : "UPDATE",
+  "measurement" : "Return=ERROR",
+  "value" : 6
+} ]
