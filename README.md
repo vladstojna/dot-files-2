@@ -270,6 +270,13 @@ ok: [replica1] => {
 ...
 ```
 
+The steps above can also be ran with a single command:
+
+```shell
+$ ansible-playbook server-cluster-all.yaml -e constrained_placement=yes -e dbserver_count=2 -e coordinator_count=1 -e cleanup=no -e wait_sync=no
+...
+```
+
 To query the properties of a collection, execute:
 
 ```shell
