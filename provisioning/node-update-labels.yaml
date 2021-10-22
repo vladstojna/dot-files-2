@@ -95,4 +95,7 @@
 
     - debug:
         msg: >-
-          {{ add_labels.results | map(attribute='cmd') | map('join', ' ') }}
+          {{ add_labels.results |
+          selectattr('cmd', 'defined') |
+          map(attribute='cmd') |
+          map('join', ' ') }}
