@@ -12,11 +12,13 @@ def log(*args: Any) -> None:
 
 
 def read_from(path):
-    return sys.stdin if not path else open(path, "r")
+    return sys.stdin if not path else open(path, "r", encoding="utf-8")
 
 
 def output_to(path):
-    return sys.stdout if not path else open(path, "w", newline="")
+    if not path:
+        return sys.stdout
+    return open(path, "w", newline="", encoding="utf-8")
 
 
 class field_values:

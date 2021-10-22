@@ -8,11 +8,11 @@ from typing import Any, Callable, Dict
 
 
 def read_from(path):
-    return sys.stdin if not path else open(path, "r")
+    return sys.stdin if not path else open(path, "r", encoding="utf-8")
 
 
 def output_to(path):
-    return sys.stdout if not path else open(path, "w")
+    return sys.stdout if not path else open(path, "w", encoding="utf-8")
 
 
 operations: Dict[str, Callable] = {

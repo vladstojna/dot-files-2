@@ -7,7 +7,7 @@ from typing import Any, Dict, Iterable
 
 
 def output_to(path):
-    return sys.stdout if not path else open(path, "w")
+    return sys.stdout if not path else open(path, "w", encoding="utf-8")
 
 
 def add_arguments(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
@@ -33,7 +33,7 @@ def add_arguments(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
 def load_json_files(files: Iterable[str]) -> Iterable:
     retval = []
     for path in files:
-        with open(path, "r") as f:
+        with open(path, "r", encoding="utf-8") as f:
             retval.append(json.load(f))
     return retval
 
