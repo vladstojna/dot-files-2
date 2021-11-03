@@ -1,0 +1,9 @@
+---
+- import_playbook: template/docker-image-build.yaml
+  vars:
+    pb_hosts: clients
+    version: latest
+    image: arangobench:{{ version }}
+    workdir: arangobench
+    extra: >-
+      {{ (version == 'latest') | ternary('', '--build-arg ARANGODB_VERSION=' ~ version) }}
