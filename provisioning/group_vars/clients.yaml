@@ -3,3 +3,8 @@ ycsb:
   image: ycsb:latest
   service: ycsb-service
   label: lsse.project.client.ycsb_artifact
+
+arangobench:
+  image: arangobench:latest
+  service: arangobench-service
+  label: lsse.project.client.arangobench_artifact
