@@ -17,15 +17,19 @@ resources:
   dbserver:
     limit:
       cpu: 0
+      memory: 0
   agency:
     limit:
       cpu: 0
+      memory: 0
   coordinator:
     limit:
       cpu: 0
+      memory: 0
   single:
     limit:
       cpu: 0
+      memory: 0
 
 node:
   label:
